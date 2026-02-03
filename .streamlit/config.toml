@@ -1,0 +1,24 @@
+[theme]
+primaryColor = "#1565c0"
+backgroundColor = "#1565c0"
+secondaryBackgroundColor = "#262630"
+textColor = "#ffffff"
+font = "sans serif"
+
+[client]
+showErrorDetails = false
+toolbarMode = "minimal"
+
+[server]
+headless = true
+runOnSave = true
+enableXsrfProtection = false
+
+[logger]
+level = "error"
+
+[browser]
+serverAddress = "localhost"
+
+
+
