@@ -79,6 +79,16 @@ O Pity-AI é um chatbot multilíngue com entrada e saída por voz, desenvolvido 
 
 Este projeto foi criado com foco em acessibilidade, experiência do usuário e integração rápida com APIs modernas.
 
+---
+
+## 🚀 Demo do Chatbot
+
+Você pode acessar o aplicativo pelo link abaixo:
+
+**[🤖 Chatbot Pity IA](https://tinyurl.com/chatbot-pity-IA)**
+
+---
+
 <p align="center">
   <a href="https://github.com/LeandroTimoteo/chatbot-Pity-IA" target="_blank">
     <img src="https://github.com/LeandroTimoteo/chatbot-Pity-IA/blob/main/images/Copilot_20250921_194729.png?raw=true" width="500" alt="Pity-IA Chatbot - Assistente de IA Inteligente" />
@@ -95,7 +105,7 @@ Este projeto foi criado com foco em acessibilidade, experiência do usuário e i
 - 💼 **LinkedIn:** [linkedin.com/in/leandro-timóteo-ads](https://www.linkedin.com/in/leandro-timóteo-ads)
 - 📱 **WhatsApp:** [+55 83 98783-0223](https://wa.me/5583987830223)
 - 🔗 **GitHub:** [@LeandroTimoteo](https://github.com/LeandroTimoteo)
-- 🌐 **Streamlit Cloud:** [share.streamlit.io/user/leandrotimoteo](https://share.streamlit.io/user/leandrotimoteo)
+
 
 ---
 
