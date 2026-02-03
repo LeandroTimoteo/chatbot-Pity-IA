@@ -105,6 +105,5 @@ Este projeto está sob a licença MIT - veja o arquivo [LICENSE](LICENSE) para m
 
 ---
 
-**Desenvolvido com ❤️ usando Streamlit, Python e IA**
 
 
