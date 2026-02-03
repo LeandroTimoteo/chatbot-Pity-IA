@@ -80,25 +80,31 @@ O Pity-AI é um chatbot multilíngue com entrada e saída por voz, desenvolvido 
 Este projeto foi criado com foco em acessibilidade, experiência do usuário e integração rápida com APIs modernas.
 
 <p align="center">
-  <a href="https://bit.ly/4gFaLUA" target="_blank">
-    <img src="https://img.shields.io/badge/Abrir%20Chatbot-Pity--IA-blue?style=for-the-badge&logo=streamlit" alt="Abrir Projeto Pity-IA" />
+  <a href="https://github.com/LeandroTimoteo/chatbot-Pity-IA" target="_blank">
+    <img src="https://github.com/LeandroTimoteo/chatbot-Pity-IA/blob/main/images/Copilot_20250921_194729.png?raw=true" width="500" alt="Pity-IA Chatbot - Assistente de IA Inteligente" />
   </a>
 </p>
 
+---
 
+## 👤 Contato & Desenvolvedor
 
-## 👤 Contato:
+**Analista de Sistemas:** Leandro Timóteo Silva
 
-**Analista de Sistemas:**  Leandro Timóteo Silva  
+- 📧 **E-mail:** [leandrinhots6@gmail.com](mailto:leandrinhots6@gmail.com)
+- 💼 **LinkedIn:** [linkedin.com/in/leandro-timóteo-ads](https://www.linkedin.com/in/leandro-timóteo-ads)
+- 📱 **WhatsApp:** [+55 83 98783-0223](https://wa.me/5583987830223)
+- 🔗 **GitHub:** [@LeandroTimoteo](https://github.com/LeandroTimoteo)
+- 🌐 **Streamlit Cloud:** [share.streamlit.io/user/leandrotimoteo](https://share.streamlit.io/user/leandrotimoteo)
 
-- 📧 **E-mail:** [leandrinhots6@gmail.com](mailto:leandrinhots6@gmail.com)  
-- 💼 **LinkedIn:** [linkedin.com/in/leandro-timóteo-ads](https://www.linkedin.com/in/leandro-timóteo-ads)  
-- 📱 **WhatsApp:** [Enviar mensagem](https://wa.me/5583987830223)
+---
 
-<p align="center">
-  <a href="https://bit.ly/4gFaLUA" target="_blank">
-    <img src="https://github.com/LeandroTimoteo/chatbot-python/blob/main/images/Copilot_20250921_194729.png?raw=true" width="400" alt="Clique para abrir o ChatBot Pity-IA" />
-  </a>
-</p>
+## 📜 Licença
+
+Este projeto está sob a licença MIT - veja o arquivo [LICENSE](LICENSE) para mais detalhes.
+
+---
+
+**Desenvolvido com ❤️ usando Streamlit, Python e IA**
 
 
