@@ -1,6 +1,6 @@
-streamlit
-openai
-gtts
-audio_recorder_streamlit
-python-dotenv
-transformers
+streamlit>=1.28.0
+openai>=1.0.0
+gtts>=2.4.0
+audio_recorder_streamlit>=0.0.10
+python-dotenv>=1.0.0
+transformers>=4.30.0
