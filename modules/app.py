@@ -1,509 +1,487 @@
-import streamlit as st
-import io
-import wave
 import os
-from dotenv import load_dotenv
-import time
+from pathlib import Path
 
-# 🔐 Carrega variáveis do .env
-load_dotenv()
+import streamlit as st
 
-# 🎙️ Módulos locais
+try:
+    from dotenv import load_dotenv
+except ImportError:
+    load_dotenv = None
+
 from audio_recorder_streamlit import audio_recorder
 from transcribe import transcribe_audio
 from speak import speak_text
 from online import gerar_resposta_online
 
-# 🔧 Configuração da página
+
+if load_dotenv:
+    load_dotenv()
+
 st.set_page_config(
-    page_title="🤖 ChatBot Pity-IA | IA Inteligente",
+    page_title="Pity-IA Studio",
+    page_icon="🤖",
     layout="wide",
-    initial_sidebar_state="collapsed"
+    initial_sidebar_state="collapsed",
 )
 
-# 🚫 Suprimir warnings do console (Mais agressivo)
-st.markdown("""
-    <script>
-    // Suprimir todos os warnings que não são críticos
-    (function() {
-        // Desabilitar logging de Permissions-Policy
-        document.addEventListener('securitypolicyviolation', function(e) {
-            e.preventDefault();
-        }, true);
-        
-        // Interceptar todos os tipos de log
-        const originalWarn = console.warn;
-        const originalError = console.error;
-        const originalLog = console.log;
-        const originalInfo = console.info;
-        const originalDebug = console.debug;
-        
-        const patternsToSuppress = [
-            'Unrecognized feature',
-            'sandbox',
-            'Permissions-Policy',
-            'allow-scripts',
-            'allow-same-origin',
-            'escape its sandboxing',
-            'ScriptProcessorNode',
-            'Deprecation',
-            'AudioRecorder',
-            'Sample rate',
-            'iframe',
-            'media',
-            'Failed to load',
-            'wav',
-            '404'
-        ];
-        
-        function shouldSuppress(message) {
-            if (typeof message !== 'string') {
-                message = String(message);
-            }
-            return patternsToSuppress.some(pattern => 
-                message.toLowerCase().includes(pattern.toLowerCase())
-            );
-        }
-        
-        console.warn = function(...args) {
-            if (!args.some(arg => shouldSuppress(arg))) {
-                originalWarn.apply(console, args);
-            }
-        };
-        
-        console.error = function(...args) {
-            if (!args.some(arg => shouldSuppress(arg))) {
-                originalError.apply(console, args);
-            }
-        };
-        
-        console.log = function(...args) {
-            if (!args.some(arg => shouldSuppress(arg))) {
-                originalLog.apply(console, args);
-            }
-        };
-        
-        console.info = function(...args) {
-            if (!args.some(arg => shouldSuppress(arg))) {
-                originalInfo.apply(console, args);
-            }
-        };
-        
-        console.debug = function(...args) {
-            if (!args.some(arg => shouldSuppress(arg))) {
-                originalDebug.apply(console, args);
-            }
-        };
-        
-        // Suprimir erros de recurso não encontrado
-        window.addEventListener('error', function(e) {
-            if (shouldSuppress(e.message) || shouldSuppress(e.filename || '')) {
-                e.preventDefault();
-            }
-        }, true);
-    })();
-    </script>
-""", unsafe_allow_html=True)
 
-# 🎨 Estilo visual avançado
-st.markdown("""
+st.markdown(
+    """
     <style>
-    * {
-        margin: 0;
-        padding: 0;
+    @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Manrope:wght@400;600;700&display=swap');
+
+    :root {
+        --bg-1: #07131f;
+        --bg-2: #0d2538;
+        --surface: rgba(255,255,255,0.08);
+        --surface-2: rgba(255,255,255,0.12);
+        --stroke: rgba(255,255,255,0.18);
+        --text: #f5fbff;
+        --muted: #b8c7d8;
+        --brand: #12d6e3;
+        --brand-2: #1f7afc;
+        --success: #12d68e;
     }
-    
+
     html, body, [data-testid="stAppViewContainer"] {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        min-height: 100vh;
+        font-family: 'Manrope', sans-serif;
+        color: var(--text);
+        background:
+            radial-gradient(1200px 500px at 10% -10%, rgba(18,214,227,.22), transparent 60%),
+            radial-gradient(900px 400px at 100% 0%, rgba(31,122,252,.25), transparent 55%),
+            linear-gradient(145deg, var(--bg-1), var(--bg-2));
     }
-    
+
     [data-testid="stMainBlockContainer"] {
-        padding: 2rem;
+        padding-top: 1.2rem;
+        max-width: 1150px;
     }
-    
-    .main-header {
-        text-align: center;
-        color: white;
-        margin-bottom: 2rem;
-        animation: fadeInDown 0.8s ease-out;
+
+    .hero {
+        border: 1px solid var(--stroke);
+        background: linear-gradient(180deg, rgba(255,255,255,.12), rgba(255,255,255,.04));
+        border-radius: 24px;
+        padding: 1.8rem;
+        backdrop-filter: blur(12px);
+        box-shadow: 0 12px 40px rgba(0,0,0,.28);
     }
-    
-    .main-header h1 {
-        font-size: 3.5rem;
-        font-weight: 800;
-        margin-bottom: 0.5rem;
-        text-shadow: 0 4px 15px rgba(0,0,0,0.3);
-    }
-    
-    .main-header p {
-        font-size: 1.2rem;
-        opacity: 0.95;
-        margin-bottom: 1rem;
-    }
-    
-    .feature-box {
-        background: rgba(255,255,255,0.95);
-        border-radius: 15px;
-        padding: 1.5rem;
-        margin: 1rem 0;
-        box-shadow: 0 10px 30px rgba(0,0,0,0.2);
-        transition: transform 0.3s ease, box-shadow 0.3s ease;
-    }
-    
-    .feature-box:hover {
-        transform: translateY(-5px);
-        box-shadow: 0 15px 40px rgba(0,0,0,0.3);
-    }
-    
-    .chat-message {
-        border-radius: 15px;
-        padding: 1.2rem;
-        margin: 1rem 0;
-        animation: slideIn 0.4s ease-out;
-    }
-    
-    .user-message {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        color: white;
-        margin-left: 20%;
-        border-bottom-right-radius: 5px;
-    }
-    
-    .assistant-message {
-        background: rgba(255,255,255,0.95);
-        color: #333;
-        margin-right: 20%;
-        border-bottom-left-radius: 5px;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-    }
-    
-    .button-group {
-        display: flex;
-        gap: 1rem;
-        justify-content: center;
-        margin: 2rem 0;
-    }
-    
-    .language-badge {
+
+    .eyebrow {
         display: inline-block;
-        background: rgba(255,255,255,0.2);
+        font-size: .75rem;
+        letter-spacing: .08em;
+        text-transform: uppercase;
+        color: var(--brand);
+        border: 1px solid rgba(18,214,227,.45);
+        border-radius: 999px;
+        padding: .28rem .6rem;
+        margin-bottom: .8rem;
+    }
+
+    .hero h1 {
+        font-family: 'Space Grotesk', sans-serif;
+        font-size: clamp(2rem, 4vw, 3.2rem);
+        line-height: 1.1;
+        margin: 0;
         color: white;
-        padding: 0.5rem 1rem;
-        border-radius: 25px;
-        margin: 0.5rem;
-        font-weight: bold;
-        font-size: 0.9rem;
     }
-    
-    @keyframes fadeInDown {
-        from {
-            opacity: 0;
-            transform: translateY(-30px);
-        }
-        to {
-            opacity: 1;
-            transform: translateY(0);
-        }
+
+    .hero p {
+        color: var(--muted);
+        margin: .8rem 0 0;
+        font-size: 1.02rem;
     }
-    
-    @keyframes slideIn {
-        from {
-            opacity: 0;
-            transform: translateX(20px);
-        }
-        to {
-            opacity: 1;
-            transform: translateX(0);
-        }
-    }
-    
-    .stButton > button {
-        border-radius: 10px;
-        padding: 0.7rem 1.5rem;
-        font-weight: bold;
-        transition: all 0.3s ease;
-        border: none;
-        cursor: pointer;
-    }
-    
-    .stButton > button:hover {
-        transform: scale(1.05);
-    }
-    
-    .landing-section {
-        background: rgba(255,255,255,0.1);
-        border-radius: 20px;
-        padding: 2rem;
-        margin: 1.5rem 0;
-        color: white;
+
+    .panel {
+        margin-top: 1rem;
+        border: 1px solid var(--stroke);
+        background: var(--surface);
+        border-radius: 18px;
+        padding: 1rem 1.1rem;
         backdrop-filter: blur(10px);
-        border: 1px solid rgba(255,255,255,0.2);
     }
-    
-    .landing-section h2 {
-        font-size: 2rem;
-        margin-bottom: 1rem;
-        font-weight: 700;
+
+    .panel h3 {
+        margin: 0 0 .35rem;
+        color: #ffffff;
+        font-family: 'Space Grotesk', sans-serif;
+        font-size: 1.06rem;
     }
-    
-    .landing-section p {
-        font-size: 1.1rem;
-        line-height: 1.8;
-        margin-bottom: 1rem;
+
+    .panel p {
+        margin: 0;
+        color: var(--muted);
+        font-size: .95rem;
     }
-    
-    .features-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-        gap: 1.5rem;
-        margin: 2rem 0;
+
+    .topbar {
+        border: 1px solid var(--stroke);
+        background: var(--surface);
+        border-radius: 16px;
+        padding: .85rem 1rem;
+        margin-bottom: .8rem;
     }
-    
-    .feature-card {
-        background: rgba(255,255,255,0.15);
-        border-radius: 15px;
-        padding: 1.5rem;
-        text-align: center;
-        color: white;
-        border: 1px solid rgba(255,255,255,0.3);
-        transition: all 0.3s ease;
+
+    .topbar h2 {
+        margin: 0;
+        font-family: 'Space Grotesk', sans-serif;
+        font-size: 1.2rem;
+        color: #ffffff;
     }
-    
-    .feature-card:hover {
-        background: rgba(255,255,255,0.25);
-        transform: translateY(-10px);
-    }
-    
-    .feature-card h3 {
-        font-size: 1.5rem;
-        margin-bottom: 0.5rem;
-    }
-    
-    .cta-button {
-        background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
-        color: white !important;
-        padding: 1rem 2rem !important;
-        border-radius: 30px !important;
-        font-size: 1.1rem !important;
-        font-weight: bold !important;
+
+    .chip {
         display: inline-block;
-        margin: 1rem 0 !important;
-        transition: all 0.3s ease !important;
+        border: 1px solid var(--stroke);
+        border-radius: 999px;
+        padding: .2rem .55rem;
+        font-size: .78rem;
+        color: var(--muted);
+        margin-right: .35rem;
     }
-    
-    .cta-button:hover {
-        transform: scale(1.05) !important;
-        box-shadow: 0 10px 30px rgba(245, 87, 108, 0.4) !important;
+
+    .bubble-user, .bubble-ai {
+        border-radius: 14px;
+        padding: .82rem .95rem;
+        margin: .4rem 0;
+        animation: pop .2s ease-out;
+    }
+
+    .bubble-user {
+        background: linear-gradient(145deg, var(--brand-2), #1756d3);
+        color: #fff;
+        border: 1px solid rgba(255,255,255,.18);
+    }
+
+    .bubble-ai {
+        background: rgba(255,255,255,.92);
+        color: #14263a;
+        border: 1px solid rgba(18,214,227,.2);
+    }
+
+    @keyframes pop {
+        from {opacity: .55; transform: translateY(6px);} 
+        to {opacity: 1; transform: translateY(0);} 
+    }
+
+    .stButton > button {
+        border: 1px solid var(--stroke);
+        background: linear-gradient(135deg, rgba(18,214,227,.2), rgba(31,122,252,.22));
+        color: #ffffff;
+        border-radius: 12px;
+        font-weight: 700;
+        min-height: 2.6rem;
+    }
+
+    .stButton > button:hover {
+        border-color: rgba(18,214,227,.6);
+        box-shadow: 0 0 0 2px rgba(18,214,227,.2) inset;
+    }
+
+    div[data-testid="stChatInput"] {
+        border-radius: 14px;
+        border: 1px solid var(--stroke);
+        background: var(--surface-2);
+    }
+
+    .small-note {
+        color: var(--muted);
+        font-size: .83rem;
+        margin-top: .2rem;
+    }
+
+    @media (max-width: 900px) {
+        [data-testid="stMainBlockContainer"] {
+            padding-top: .8rem;
+            padding-left: .8rem;
+            padding-right: .8rem;
+        }
+
+        .hero {
+            padding: 1.2rem;
+        }
     }
     </style>
-""", unsafe_allow_html=True)
+    """,
+    unsafe_allow_html=True,
+)
 
-# 📱 Inicializa session state
+
 if "page" not in st.session_state:
     st.session_state.page = "landing"
 if "messages" not in st.session_state:
     st.session_state.messages = []
 if "idioma" not in st.session_state:
     st.session_state.idioma = "pt"
+if "ui_lang" not in st.session_state:
+    st.session_state.ui_lang = "pt"
+if "last_audio_path" not in st.session_state:
+    st.session_state.last_audio_path = None
 
-# 🏠 LANDING PAGE
-if st.session_state.page == "landing":
-    # Header principal
-    st.markdown("""
-        <div class="main-header">
-            <h1>🤖 Pity-IA</h1>
-            <p>Seu Assistente de IA Inteligente e Bilíngue</p>
-            <div style="margin: 1.5rem 0;">
-                <span class="language-badge">🇧🇷 Português</span>
-                <span class="language-badge">🇺🇸 Inglês</span>
-            </div>
-        </div>
-    """, unsafe_allow_html=True)
-    
-    # Seção de benefícios
-    st.markdown("""
-        <div class="landing-section">
-            <h2>🌟 Por que escolher Pity-IA?</h2>
-            <p>Conheça as vantagens de um assistente de IA de última geração</p>
-        </div>
-    """, unsafe_allow_html=True)
-    
-    # Grid de features
+
+LANG_LABEL = {
+    "pt": "Português",
+    "en": "English",
+}
+
+UI_TEXT = {
+    "pt": {
+        "layout_toggle": "Layout: Português",
+        "layout_help": "Mudar layout para inglês",
+        "hero_title": "Seu assistente com visual premium e resposta em tempo real",
+        "hero_desc": "Converse por texto ou voz em PT/EN com uma interface mais moderna, limpa e preparada para impressionar.",
+        "panel_1_t": "Identidade forte",
+        "panel_1_d": "Visual tecnológico com foco em clareza e confiança.",
+        "panel_2_t": "Fluxo rápido",
+        "panel_2_d": "Entrada por texto/voz e resposta com menos fricção.",
+        "panel_3_t": "Modo bilíngue",
+        "panel_3_d": "Alternância instantânea entre português e inglês.",
+        "start_pt": "Iniciar em Português",
+        "start_en": "Start in English",
+        "prompt_examples": "Exemplos de prompts",
+        "prompt_examples_info": "Exemplos: 'Crie um plano de estudos', 'Explique este erro', 'Resuma meu texto em 5 linhas'.",
+        "chat_title": "🤖 Pity-IA Chat",
+        "chip_lang": "Idioma",
+        "chip_messages": "Mensagens",
+        "reply_lang_btn": "Trocar idioma da resposta",
+        "clear_chat_btn": "Limpar conversa",
+        "back_btn": "Voltar",
+        "voice_input": "Entrada por voz",
+        "tip": "Dica: pergunte algo específico para respostas melhores.",
+        "chat_input": "Digite sua pergunta...",
+        "transcribing": "Transcrevendo áudio...",
+        "transcription_ok": "Transcrição",
+        "thinking": "Pity-IA está pensando...",
+        "listen_last": "Ouvir última resposta",
+        "you": "Você",
+    },
+    "en": {
+        "layout_toggle": "Layout: English",
+        "layout_help": "Switch layout to Portuguese",
+        "hero_title": "Your assistant with premium visuals and real-time responses",
+        "hero_desc": "Chat by text or voice in PT/EN with a modern, clean interface built to stand out.",
+        "panel_1_t": "Strong identity",
+        "panel_1_d": "Technology-first visual style with clarity and trust.",
+        "panel_2_t": "Fast flow",
+        "panel_2_d": "Text/voice input and responses with less friction.",
+        "panel_3_t": "Bilingual mode",
+        "panel_3_d": "Instant switch between Portuguese and English.",
+        "start_pt": "Start in Portuguese",
+        "start_en": "Start in English",
+        "prompt_examples": "Prompt examples",
+        "prompt_examples_info": "Examples: 'Create a study plan', 'Explain this error', 'Summarize my text in 5 lines'.",
+        "chat_title": "🤖 Pity-IA Chat",
+        "chip_lang": "Language",
+        "chip_messages": "Messages",
+        "reply_lang_btn": "Switch reply language",
+        "clear_chat_btn": "Clear chat",
+        "back_btn": "Back",
+        "voice_input": "Voice input",
+        "tip": "Tip: ask specific questions for better responses.",
+        "chat_input": "Type your question...",
+        "transcribing": "Transcribing audio...",
+        "transcription_ok": "Transcription",
+        "thinking": "Pity-IA is thinking...",
+        "listen_last": "Play last answer",
+        "you": "You",
+    },
+}
+
+
+def render_message(role: str, content: str) -> None:
+    css = "bubble-user" if role == "user" else "bubble-ai"
+    ui = UI_TEXT[st.session_state.ui_lang]
+    prefix = ui["you"] if role == "user" else "Pity-IA"
+    st.markdown(
+        f'<div class="{css}"><strong>{prefix}:</strong> {content}</div>',
+        unsafe_allow_html=True,
+    )
+
+
+def landing_page() -> None:
+    ui = UI_TEXT[st.session_state.ui_lang]
+    st.markdown(
+        f"""
+        <section class="hero">
+            <span class="eyebrow">Pity-IA Studio</span>
+            <h1>{ui["hero_title"]}</h1>
+            <p>
+                {ui["hero_desc"]}
+            </p>
+        </section>
+        """,
+        unsafe_allow_html=True,
+    )
+
     col1, col2, col3 = st.columns(3)
-    
     with col1:
-        st.markdown("""
-            <div class="feature-card">
-                <h3>🎯 Preciso</h3>
-                <p>Respostas precisas e relevantes adaptadas às suas necessidades</p>
+        st.markdown(
+            f"""
+            <div class="panel">
+                <h3>{ui["panel_1_t"]}</h3>
+                <p>{ui["panel_1_d"]}</p>
             </div>
-        """, unsafe_allow_html=True)
-    
+            """,
+            unsafe_allow_html=True,
+        )
     with col2:
-        st.markdown("""
-            <div class="feature-card">
-                <h3>🌍 Bilíngue</h3>
-                <p>Suporte completo em Português e Inglês</p>
+        st.markdown(
+            f"""
+            <div class="panel">
+                <h3>{ui["panel_2_t"]}</h3>
+                <p>{ui["panel_2_d"]}</p>
             </div>
-        """, unsafe_allow_html=True)
-    
+            """,
+            unsafe_allow_html=True,
+        )
     with col3:
-        st.markdown("""
-            <div class="feature-card">
-                <h3>⚡ Rápido</h3>
-                <p>Respostas instantâneas com tecnologia de IA avançada</p>
+        st.markdown(
+            f"""
+            <div class="panel">
+                <h3>{ui["panel_3_t"]}</h3>
+                <p>{ui["panel_3_d"]}</p>
             </div>
-        """, unsafe_allow_html=True)
-    
-    col4, col5, col6 = st.columns(3)
-    
-    with col4:
-        st.markdown("""
-            <div class="feature-card">
-                <h3>🎤 Voz</h3>
-                <p>Suporte a entrada e saída de áudio natural</p>
-            </div>
-        """, unsafe_allow_html=True)
-    
-    with col5:
-        st.markdown("""
-            <div class="feature-card">
-                <h3>💾 Histórico</h3>
-                <p>Mantém contexto nas suas conversas</p>
-            </div>
-        """, unsafe_allow_html=True)
-    
-    with col6:
-        st.markdown("""
-            <div class="feature-card">
-                <h3>🚀 Pronto</h3>
-                <p>Comece a usar agora sem complicações</p>
-            </div>
-        """, unsafe_allow_html=True)
-    
-    # CTA buttons
-    st.markdown("<br>", unsafe_allow_html=True)
-    
-    col_btn1, col_btn2, col_btn3 = st.columns([1, 1, 1])
-    
-    with col_btn1:
-        if st.button("🚀 Começar em Português", use_container_width=True, key="btn_pt"):
+            """,
+            unsafe_allow_html=True,
+        )
+
+    st.markdown("<div style='height:.55rem'></div>", unsafe_allow_html=True)
+    cta1, cta2, cta3 = st.columns([1, 1, 1])
+
+    with cta1:
+        if st.button(ui["start_pt"], use_container_width=True):
             st.session_state.idioma = "pt"
             st.session_state.page = "chat"
             st.rerun()
-    
-    with col_btn2:
-        if st.button("🚀 Start in English", use_container_width=True, key="btn_en"):
+
+    with cta2:
+        if st.button(ui["start_en"], use_container_width=True):
             st.session_state.idioma = "en"
             st.session_state.page = "chat"
             st.rerun()
-    
-    with col_btn3:
-        if st.button("❓ Ver Mais", use_container_width=True, key="btn_more"):
-            st.info("📌 Este é um assistente de IA bilíngue alimentado por tecnologia de ponta. Use para fazer perguntas, obter respostas informadas e conversar naturalmente!")
 
-# 💬 PÁGINA DO CHAT
-elif st.session_state.page == "chat":
-    # Header
-    col_header1, col_header2, col_header3 = st.columns([3, 1, 1])
-    
-    with col_header1:
-        st.markdown(f"### 🤖 ChatBot Pity-IA | Idioma: {'🇧🇷 Português' if st.session_state.idioma == 'pt' else '🇺🇸 English'}")
-    
-    with col_header2:
-        if st.button("🔄 Trocar Idioma"):
+    with cta3:
+        if st.button(ui["prompt_examples"], use_container_width=True):
+            st.info(ui["prompt_examples_info"])
+
+
+
+def process_voice_input(audio_bytes) -> str | None:
+    if not audio_bytes:
+        return None
+
+    temp_file = Path("audio_temp.wav")
+    try:
+        temp_file.write_bytes(audio_bytes)
+        text = transcribe_audio(str(temp_file))
+        return text
+    finally:
+        if temp_file.exists():
+            try:
+                temp_file.unlink()
+            except Exception:
+                pass
+
+
+
+def chat_page() -> None:
+    ui = UI_TEXT[st.session_state.ui_lang]
+    st.markdown('<div class="topbar">', unsafe_allow_html=True)
+    header_left, header_mid, header_right = st.columns([3, 1.2, 1.2])
+
+    with header_left:
+        st.markdown(
+            f"""
+            <h2>{ui["chat_title"]}</h2>
+            <span class="chip">{ui["chip_lang"]}: {LANG_LABEL[st.session_state.idioma]}</span>
+            <span class="chip">{ui["chip_messages"]}: {len(st.session_state.messages)}</span>
+            """,
+            unsafe_allow_html=True,
+        )
+
+    with header_mid:
+        if st.button(ui["reply_lang_btn"], use_container_width=True):
             st.session_state.idioma = "en" if st.session_state.idioma == "pt" else "pt"
             st.rerun()
-    
-    with col_header3:
-        if st.button("🧹 Limpar"):
+
+    with header_right:
+        if st.button(ui["clear_chat_btn"], use_container_width=True):
             st.session_state.messages = []
+            st.session_state.last_audio_path = None
             st.rerun()
-    
-    # Botão voltar
-    if st.button("⬅️ Voltar"):
-        st.session_state.page = "landing"
-        st.rerun()
-    
+
+    st.markdown("</div>", unsafe_allow_html=True)
+
+    back_col, _ = st.columns([1, 6])
+    with back_col:
+        if st.button(ui["back_btn"], use_container_width=True):
+            st.session_state.page = "landing"
+            st.rerun()
+
     st.divider()
-    
-    # Display messages
-    for msg in st.session_state.messages:
-        if msg["role"] == "user":
-            st.markdown(f'<div class="chat-message user-message"><strong>👤 Você:</strong> {msg["content"]}</div>', unsafe_allow_html=True)
-        else:
-            st.markdown(f'<div class="chat-message assistant-message"><strong>🤖 Pity-IA:</strong> {msg["content"]}</div>', unsafe_allow_html=True)
-    
+
+    for message in st.session_state.messages:
+        render_message(message["role"], message["content"])
+
     st.divider()
-    
-    # Input
-    col_audio, col_text = st.columns([1, 3])
-    
-    with col_audio:
-        st.write("🎤 Áudio:")
+
+    audio_col, help_col = st.columns([1, 3])
+    with audio_col:
+        st.caption(ui["voice_input"])
         audio_bytes = audio_recorder()
-    
-    user_input = st.chat_input("Digite sua pergunta ou fale através do microfone...", key="chat_input")
-    
-    # Processar áudio
+
+    with help_col:
+        st.markdown(
+            f"<p class='small-note'>{ui['tip']}</p>",
+            unsafe_allow_html=True,
+        )
+
+    user_input = st.chat_input(
+        ui["chat_input"],
+        key="chat_input",
+    )
+
     if audio_bytes and not user_input:
-        try:
-            with st.spinner("🎧 Processando áudio..."):
-                with open("audio_temp.wav", "wb") as f:
-                    f.write(audio_bytes)
-                user_input = transcribe_audio("audio_temp.wav")
-                if user_input:
-                    st.success(f"📝 Transcrição: {user_input}")
-                    # Limpar arquivo após uso
-                    try:
-                        os.remove("audio_temp.wav")
-                    except:
-                        pass
-        except Exception as e:
-            st.error(f"❌ Erro na transcrição: {e}")
-    
-    # Processar chat
+        with st.spinner(ui["transcribing"]):
+            user_input = process_voice_input(audio_bytes)
+        if user_input:
+            st.success(f"{ui['transcription_ok']}: {user_input}")
+
     if user_input and user_input.strip():
-        # Adicionar mensagem do usuário
         st.session_state.messages.append({"role": "user", "content": user_input})
-        
-        # Gerar resposta
-        with st.spinner("🤖 Pity-IA está pensando..."):
-            resultado = gerar_resposta_online(user_input, st.session_state.idioma)
-            
-            if resultado["sucesso"]:
-                resposta = resultado[st.session_state.idioma]
-                st.session_state.messages.append({"role": "assistant", "content": resposta})
-                
-                # Tentar gerar áudio (sem autoplay para evitar erro 404)
-                try:
-                    lang_audio = "pt" if st.session_state.idioma == "pt" else "en"
-                    audio_path = speak_text(resposta, lang_audio)
-                    if audio_path and os.path.exists(audio_path):
-                        # Armazenar o path do áudio na session para usar depois
-                        st.session_state.last_audio_path = audio_path
-                except Exception as audio_error:
-                    # Se falhar, apenas continua sem áudio
-                    st.session_state.last_audio_path = None
-            else:
-                st.error(resultado[st.session_state.idioma])
-        
+
+        with st.spinner(ui["thinking"]):
+            result = gerar_resposta_online(user_input, st.session_state.idioma)
+
+        if result.get("sucesso"):
+            answer = result[st.session_state.idioma]
+            st.session_state.messages.append({"role": "assistant", "content": answer})
+
+            try:
+                audio_lang = "pt" if st.session_state.idioma == "pt" else "en"
+                audio_path = speak_text(answer, audio_lang)
+                st.session_state.last_audio_path = audio_path if audio_path and os.path.exists(audio_path) else None
+            except Exception:
+                st.session_state.last_audio_path = None
+        else:
+            st.error(result[st.session_state.idioma])
+
         st.rerun()
-    
-    # Reproduzir áudio se existir
-    if hasattr(st.session_state, 'last_audio_path') and st.session_state.last_audio_path:
-        if os.path.exists(st.session_state.last_audio_path):
-            st.divider()
-            col_audio1, col_audio2 = st.columns([1, 3])
-            with col_audio1:
-                if st.button("🔊 Ouvir Resposta"):
-                    try:
-                        with open(st.session_state.last_audio_path, "rb") as audio_file:
-                            st.audio(audio_file.read(), format="audio/wav")
-                    except:
-                        pass
+
+    if st.session_state.last_audio_path and os.path.exists(st.session_state.last_audio_path):
+        st.divider()
+        if st.button(ui["listen_last"], use_container_width=False):
+            with open(st.session_state.last_audio_path, "rb") as audio_file:
+                st.audio(audio_file.read(), format="audio/wav")
 
 
+toolbar_left, toolbar_right = st.columns([6, 1.6])
+with toolbar_right:
+    ui = UI_TEXT[st.session_state.ui_lang]
+    if st.button(ui["layout_toggle"], use_container_width=True, help=ui["layout_help"]):
+        st.session_state.ui_lang = "en" if st.session_state.ui_lang == "pt" else "pt"
+        st.rerun()
 
-
+if st.session_state.page == "landing":
+    landing_page()
+else:
+    chat_page()

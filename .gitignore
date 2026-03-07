@@ -1,3 +1,10 @@
 env/
 .env
-.env
+venv/
+__pycache__/
+*.pyc
+audio_temp.wav
+resposta_audio.wav
+modules/resposta.wav
+modules/audio.wav
+pip_log.txt
