@@ -436,10 +436,15 @@ def chat_page() -> None:
         key="chat_input",
     )
 
-    if audio_bytes and not user_input:
+    # Evitar loop infinito do st.audio_input (que mantém o último áudio fixo)
+    if "processed_audio_id" not in st.session_state:
+        st.session_state.processed_audio_id = None
+
+    if audio_value and audio_value.id != st.session_state.processed_audio_id and not user_input:
         with st.spinner(ui["transcribing"]):
             user_input = process_voice_input(audio_bytes)
         if user_input:
+            st.session_state.processed_audio_id = audio_value.id
             st.success(f"{ui['transcription_ok']}: {user_input}")
 
     if user_input and user_input.strip():
