@@ -8,7 +8,6 @@ try:
 except ImportError:
     load_dotenv = None
 
-from audio_recorder_streamlit import audio_recorder
 from transcribe import transcribe_audio
 from speak import speak_text
 from online import gerar_resposta_online
@@ -424,16 +423,13 @@ def chat_page() -> None:
 
     st.divider()
 
-    audio_col, help_col = st.columns([1, 3])
-    with audio_col:
-        st.caption(ui["voice_input"])
-        audio_bytes = audio_recorder()
+    audio_value = st.audio_input(ui["voice_input"])
+    audio_bytes = audio_value.getvalue() if audio_value else None
 
-    with help_col:
-        st.markdown(
-            f"<p class='small-note'>{ui['tip']}</p>",
-            unsafe_allow_html=True,
-        )
+    st.markdown(
+        f"<p class='small-note'>{ui['tip']}</p>",
+        unsafe_allow_html=True,
+    )
 
     user_input = st.chat_input(
         ui["chat_input"],
