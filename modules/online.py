@@ -30,10 +30,20 @@ else:
     _load_env_file(_this_dir / "env" / ".env")
     _load_env_file(_root_dir / "env" / ".env")
 
-# 🔑 Obtém a chave da API
+# 🔑 Obtém a chave da API (tenta pelo ambiente e pelo st.secrets do Streamlit Cloud)
 api_key = os.getenv("OPENROUTER_API_KEY")
+
 if not api_key:
-    raise ValueError("❌ Chave de API não encontrada. Defina OPENROUTER_API_KEY no .env.")
+    try:
+        import streamlit as st
+        api_key = st.secrets.get("OPENROUTER_API_KEY")
+    except Exception:
+        pass
+
+if not api_key:
+    # Apenas avisa no console do servidor em vez de derrubar a aplicação toda
+    print("⚠️ Aviso: OPENROUTER_API_KEY não encontrada. O chat poderá falhar se não configurada nas opções da nuvem.")
+    api_key = ""
 
 OPENROUTER_MODEL = os.getenv("OPENROUTER_MODEL", "nvidia/nemotron-3-nano-30b-a3b:free")
 FALLBACK_MODELS = [
