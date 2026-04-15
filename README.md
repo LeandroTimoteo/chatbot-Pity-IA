@@ -64,10 +64,10 @@ chatbot-Pity-IA/
 - Streamlit
 - OpenRouter API
 - gTTS
-- audio-recorder-streamlit
+- Streamlit `st.audio_input`
 
 ## Demo
-**[Pity-IA Demo](https://tinyurl.com/chatbot-pity-IA)**
+**[Pity-IA Demo]
 
 ## Contact
 **Leandro Timoteo Silva**
@@ -78,6 +78,5 @@ chatbot-Pity-IA/
 
 ## License
 This project is licensed under the MIT License. See [LICENSE](LICENSE) for details.
-
 
 

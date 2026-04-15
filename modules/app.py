@@ -1,4 +1,5 @@
 import os
+import hashlib
 from pathlib import Path
 
 import streamlit as st
@@ -215,6 +216,8 @@ if "ui_lang" not in st.session_state:
     st.session_state.ui_lang = "pt"
 if "last_audio_path" not in st.session_state:
     st.session_state.last_audio_path = None
+if "last_voice_digest" not in st.session_state:
+    st.session_state.last_voice_digest = None
 
 
 LANG_LABEL = {
@@ -423,28 +426,28 @@ def chat_page() -> None:
 
     st.divider()
 
-    audio_value = st.audio_input(ui["voice_input"])
-    audio_bytes = audio_value.getvalue() if audio_value else None
+    audio_col, help_col = st.columns([1, 3])
+    with audio_col:
+        audio_file = st.audio_input(ui["voice_input"])
+        audio_bytes = audio_file.getvalue() if audio_file else None
 
-    st.markdown(
-        f"<p class='small-note'>{ui['tip']}</p>",
-        unsafe_allow_html=True,
-    )
+    with help_col:
+        st.markdown(
+            f"<p class='small-note'>{ui['tip']}</p>",
+            unsafe_allow_html=True,
+        )
 
     user_input = st.chat_input(
         ui["chat_input"],
         key="chat_input",
     )
 
-    # Evitar loop infinito do st.audio_input
-    if "processed_audio_hash" not in st.session_state:
-        st.session_state.processed_audio_hash = None
-
-    if audio_bytes and hash(audio_bytes) != st.session_state.processed_audio_hash and not user_input:
+    audio_digest = hashlib.sha1(audio_bytes).hexdigest() if audio_bytes else None
+    if audio_bytes and not user_input and audio_digest != st.session_state.last_voice_digest:
         with st.spinner(ui["transcribing"]):
             user_input = process_voice_input(audio_bytes)
+        st.session_state.last_voice_digest = audio_digest
         if user_input:
-            st.session_state.processed_audio_hash = hash(audio_bytes)
             st.success(f"{ui['transcription_ok']}: {user_input}")
 
     if user_input and user_input.strip():
@@ -464,10 +467,7 @@ def chat_page() -> None:
             except Exception:
                 st.session_state.last_audio_path = None
         else:
-            # Em caso de erro, salva no chat para que o rerun() não apague a mensagem!
-            error_msg = result[st.session_state.idioma]
-            st.session_state.messages.append({"role": "assistant", "content": error_msg})
-            st.session_state.last_audio_path = None
+            st.error(result[st.session_state.idioma])
 
         st.rerun()
 
