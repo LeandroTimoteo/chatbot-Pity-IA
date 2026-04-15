@@ -67,7 +67,8 @@ chatbot-Pity-IA/
 - Streamlit `st.audio_input`
 
 ## Demo
-**[Pity-IA Demo]
+**[Pity-IA Demo] [![Open App](https://img.shields.io/badge/🚀%20Open%20App-Streamlit-brightgreen?style=for-the-badge)](https://chatbot-pity-ia-nbnhnjscbk8htyftxdzxm5.streamlit.app/)
+
 
 ## Contact
 **Leandro Timoteo Silva**
