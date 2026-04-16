@@ -11,14 +11,9 @@ toolbarMode = "minimal"
 
 [server]
 headless = true
-runOnSave = true
-enableXsrfProtection = false
 
 [logger]
 level = "error"
-
-[browser]
-serverAddress = "localhost"
 
 
 

@@ -7,7 +7,6 @@ toolbarMode = "minimal"
 
 [server]
 headless = true
-enableXsrfProtection = false
 port = 8501
 
 [logger]

@@ -45,6 +45,16 @@ streamlit run modules/app.py --server.port 8502
 Open in browser:
 `http://127.0.0.1:8502`
 
+## Streamlit Cloud (Clean Deploy Checklist)
+1. Commit and push the latest code to `main`.
+2. In Streamlit Cloud, open your app settings and confirm:
+   - Python version is compatible with your environment.
+   - Secrets include `OPENROUTER_API_KEY` (and optional `OPENROUTER_MODEL`).
+3. Click `Clear cache`.
+4. Click `Reboot app`.
+5. Hard refresh the browser (`Ctrl+F5`).
+6. If console still shows `Unrecognized feature: ...`, treat it as a browser/platform warning from iframe permissions policy, not as a Python app runtime error.
+
 ## Project Structure
 ```text
 chatbot-Pity-IA/
@@ -79,5 +89,4 @@ chatbot-Pity-IA/
 
 ## License
 This project is licensed under the MIT License. See [LICENSE](LICENSE) for details.
-
 
