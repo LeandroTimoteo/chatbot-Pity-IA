@@ -31,8 +31,11 @@ def _patch_streamlit_iframe_permissions() -> None:
         js_dir = streamlit_root / "static" / "static" / "js"
         if not js_dir.exists():
             return
-        for js_file in js_dir.glob("IFrameUtil.*.js"):
+        # Streamlit may move this list between IFrameUtil.* and index-*.js bundles.
+        for js_file in js_dir.glob("*.js"):
             content = js_file.read_text(encoding="utf-8")
+            if not any(feature in content for feature in unsupported):
+                continue
             patched = content
             for feature in unsupported:
                 patched = patched.replace(f"`{feature}`,", "")
