@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Pity-IA Web</title>
+    <link rel="stylesheet" href="/static/app.css" />
+  </head>
+  <body>
+    <main class="shell">
+      <section class="card">
+        <header class="top">
+          <h1>Pity-IA</h1>
+          <div class="lang">
+            <button id="ptBtn" class="active" type="button">PT</button>
+            <button id="enBtn" type="button">EN</button>
+          </div>
+        </header>
+
+        <section id="chat" class="chat" aria-live="polite"></section>
+
+        <form id="chatForm" class="composer">
+          <input
+            id="prompt"
+            name="prompt"
+            placeholder="Digite sua pergunta..."
+            autocomplete="off"
+            required
+          />
+          <button id="sendBtn" type="submit">Enviar</button>
+        </form>
+      </section>
+    </main>
+
+    <script src="/static/app.js"></script>
+  </body>
+</html>
+

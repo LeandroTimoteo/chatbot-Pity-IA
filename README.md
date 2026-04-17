@@ -8,11 +8,14 @@
 
 ![Python](https://img.shields.io/badge/Python-3.10%2B-blue?logo=python)
 ![Streamlit](https://img.shields.io/badge/Streamlit-App-red?logo=streamlit)
+![FastAPI](https://img.shields.io/badge/FastAPI-Web-009688?logo=fastapi)
 ![OpenRouter](https://img.shields.io/badge/OpenRouter-API-green?logo=openai)
 ![License](https://img.shields.io/badge/License-MIT-yellow)
 
-Pity-IA is a bilingual (Portuguese/English) voice-enabled chatbot built with Streamlit.  
-It integrates with OpenRouter models to provide real-time AI responses through a modern UI.
+Pity-IA is a bilingual (Portuguese/English) voice-enabled chatbot.  
+It includes:
+- a Streamlit app (`modules/app.py`)
+- a FastAPI web app (`fastapi_app.py`) without Streamlit iframe warnings
 
 ## Features
 - Text and voice input
@@ -37,7 +40,15 @@ OPENROUTER_API_KEY=your_openrouter_api_key
 OPENROUTER_MODEL=nvidia/nemotron-3-nano-30b-a3b:free
 ```
 
-## Run
+## Run (FastAPI Web - Recommended)
+```bash
+python -m uvicorn fastapi_app:app --host 127.0.0.1 --port 8503 --reload
+```
+
+Open in browser:
+`http://127.0.0.1:8503`
+
+## Run (Streamlit)
 ```bash
 streamlit run modules/app.py --server.port 8502
 ```
@@ -58,11 +69,17 @@ Open in browser:
 ## Project Structure
 ```text
 chatbot-Pity-IA/
+├── fastapi_app.py
 ├── modules/
 │   ├── app.py
 │   ├── online.py
 │   ├── speak.py
 │   └── transcribe.py
+├── web/
+│   ├── index.html
+│   └── static/
+│       ├── app.css
+│       └── app.js
 ├── images/
 ├── videos/
 ├── requirements.txt
@@ -89,4 +106,3 @@ chatbot-Pity-IA/
 
 ## License
 This project is licensed under the MIT License. See [LICENSE](LICENSE) for details.
-
