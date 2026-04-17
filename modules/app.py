@@ -14,8 +14,40 @@ from speak import speak_text
 from online import gerar_resposta_online
 
 
+def _patch_streamlit_iframe_permissions() -> None:
+    """Strip unsupported iframe permission features from Streamlit frontend bundle."""
+    unsupported = (
+        "ambient-light-sensor",
+        "battery",
+        "document-domain",
+        "layout-animations",
+        "legacy-image-formats",
+        "oversized-images",
+        "vr ",
+        "wake-lock",
+    )
+    try:
+        streamlit_root = Path(st.__file__).resolve().parent
+        js_dir = streamlit_root / "static" / "static" / "js"
+        if not js_dir.exists():
+            return
+        for js_file in js_dir.glob("IFrameUtil.*.js"):
+            content = js_file.read_text(encoding="utf-8")
+            patched = content
+            for feature in unsupported:
+                patched = patched.replace(f"`{feature}`,", "")
+                patched = patched.replace(f"`{feature}`", "")
+            if patched != content:
+                js_file.write_text(patched, encoding="utf-8")
+    except Exception:
+        # Never fail app startup if package files are read-only.
+        pass
+
+
 if load_dotenv:
     load_dotenv()
+
+_patch_streamlit_iframe_permissions()
 
 st.set_page_config(
     page_title="Pity-IA Studio",
