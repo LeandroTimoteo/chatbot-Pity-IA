@@ -1,5 +1,6 @@
 import os
 import hashlib
+import re
 from pathlib import Path
 
 import streamlit as st
@@ -23,7 +24,7 @@ def _patch_streamlit_iframe_permissions() -> None:
         "layout-animations",
         "legacy-image-formats",
         "oversized-images",
-        "vr ",
+        "vr",
         "wake-lock",
     )
     try:
@@ -38,8 +39,14 @@ def _patch_streamlit_iframe_permissions() -> None:
                 continue
             patched = content
             for feature in unsupported:
-                patched = patched.replace(f"`{feature}`,", "")
-                patched = patched.replace(f"`{feature}`", "")
+                # Remove entries no matter the quote style and optional comma spacing.
+                patched = re.sub(rf"([`'\"]){re.escape(feature)}\1\s*,\s*", "", patched)
+                patched = re.sub(rf",\s*([`'\"]){re.escape(feature)}\1", "", patched)
+                patched = re.sub(rf"([`'\"]){re.escape(feature)}\1", "", patched)
+            # Cleanup occasional malformed commas after removals.
+            patched = re.sub(r",\s*,", ",", patched)
+            patched = re.sub(r"\[\s*,", "[", patched)
+            patched = re.sub(r",\s*]", "]", patched)
             if patched != content:
                 js_file.write_text(patched, encoding="utf-8")
     except Exception:

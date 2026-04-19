@@ -4,3 +4,5 @@ uvicorn>=0.30.0
 openai>=1.0.0
 gtts>=2.4.0
 python-dotenv>=1.0.0
+SpeechRecognition>=3.10.4
+requests>=2.32.0

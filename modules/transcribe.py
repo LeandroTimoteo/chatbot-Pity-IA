@@ -1,6 +1,12 @@
-import speech_recognition as sr
+try:
+    import speech_recognition as sr
+except ImportError:
+    sr = None
 
 def transcribe_audio(audio_path):
+    if sr is None:
+        return "⚠️ Reconhecimento de voz indisponível (dependência SpeechRecognition não instalada)."
+
     try:
         r = sr.Recognizer()
         with sr.AudioFile(audio_path) as source:
