@@ -2,152 +2,152 @@
 
 # 🤖 Pity-IA Studio
 
-### Assistente de IA Bilíngue com Interface Premium
+### Bilingual AI Assistant with Premium Interface
 
-[![Open App](https://img.shields.io/badge/🚀_Abrir_App-Streamlit_Cloud-FF4B4B?style=for-the-badge&logo=streamlit&logoColor=white)](https://chatbot-pity-ia-nbnhnjscbk8htyftxdzxm5.streamlit.app/)
+[![Open App](https://img.shields.io/badge/🚀_Open_App-Streamlit_Cloud-FF4B4B?style=for-the-badge&logo=streamlit&logoColor=white)](https://chatbot-pity-ia-nbnhnjscbk8htyftxdzxm5.streamlit.app/)
 [![Python](https://img.shields.io/badge/Python-3.10+-3776AB?style=flat-square&logo=python&logoColor=white)](https://python.org)
 [![Streamlit](https://img.shields.io/badge/Streamlit-1.56+-FF4B4B?style=flat-square&logo=streamlit&logoColor=white)](https://streamlit.io)
 [![FastAPI](https://img.shields.io/badge/FastAPI-Web_API-009688?style=flat-square&logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com)
 [![OpenRouter](https://img.shields.io/badge/OpenRouter-AI_API-6366F1?style=flat-square&logo=openai&logoColor=white)](https://openrouter.ai)
-[![License](https://img.shields.io/badge/Licença-MIT-22C55E?style=flat-square)](LICENSE)
-[![Security](https://img.shields.io/badge/Segurança-Hardened-0EA5E9?style=flat-square&logo=shield&logoColor=white)](#-segurança)
+[![License](https://img.shields.io/badge/License-MIT-22C55E?style=flat-square)](LICENSE)
+[![Security](https://img.shields.io/badge/Security-Hardened-0EA5E9?style=flat-square&logo=shield&logoColor=white)](#-security)
 
 <br>
 
 <a href="https://chatbot-pity-ia-nbnhnjscbk8htyftxdzxm5.streamlit.app/" target="_blank">
-  <img src="https://github.com/LeandroTimoteo/chatbot-Pity-IA/blob/main/images/Copilot_20250921_194729.png?raw=true" width="720" alt="Pity-IA Studio — Preview da interface do chatbot" />
+  <img src="https://github.com/LeandroTimoteo/chatbot-Pity-IA/blob/main/images/Copilot_20250921_194729.png?raw=true" width="720" alt="Pity-IA Studio — Chatbot Interface Preview" />
 </a>
 
 <br>
 
-**[🚀 Abrir Pity-IA Studio](https://chatbot-pity-ia-nbnhnjscbk8htyftxdzxm5.streamlit.app/)** · **[📋 Reportar Bug](https://github.com/LeandroTimoteo/chatbot-Pity-IA/issues)** · **[💡 Sugerir Feature](https://github.com/LeandroTimoteo/chatbot-Pity-IA/issues)**
+**[🚀 Open Pity-IA Studio](https://chatbot-pity-ia-nbnhnjscbk8htyftxdzxm5.streamlit.app/)** · **[📋 Report Bug](https://github.com/LeandroTimoteo/chatbot-Pity-IA/issues)** · **[💡 Suggest Feature](https://github.com/LeandroTimoteo/chatbot-Pity-IA/issues)**
 
 </div>
 
 ---
 
-## ✨ Funcionalidades
+## ✨ Features
 
-| Feature | Descrição |
+| Feature | Description |
 |---------|-----------|
-| 🇧🇷🇺🇸 **Bilíngue** | Respostas automáticas em Português e Inglês com tradução em tempo real |
-| 🎤 **Entrada por Voz** | Grave áudio direto no navegador — transcrição automática via Google Speech |
-| 🔊 **Saída por Voz** | Ouça respostas em áudio sintetizado (TTS) com seleção inteligente de voz |
-| 🎨 **Design Premium** | Interface glassmorphism com gradientes, animações e modo responsivo |
-| 🔒 **Segurança** | Proteção XSS, sessões isoladas, rate limiting, validação de input |
-| 💾 **Histórico** | Contexto de conversa por sessão com limite inteligente de mensagens |
-| ⚡ **Multi-modelo** | Fallback automático entre modelos de IA via OpenRouter |
+| 🇧🇷🇺🇸 **Bilingual** | Automatic responses in Portuguese and English with real-time translation |
+| 🎤 **Voice Input** | Record audio directly in the browser — automatic transcription via Google Speech |
+| 🔊 **Voice Output** | Listen to synthesized audio responses (TTS) with smart voice selection |
+| 🎨 **Premium Design** | Glassmorphism interface with gradients, animations, and responsive mode |
+| 🔒 **Security** | XSS protection, isolated sessions, rate limiting, and input validation |
+| 💾 **History** | Conversation context per session with smart message limits |
+| ⚡ **Multi-model** | Automatic fallback between AI models via OpenRouter |
 
 ---
 
-## 🚀 Demo ao Vivo
+## 🚀 Live Demo
 
 <div align="center">
 
-### 👉 [**Acesse o Pity-IA Studio agora**](https://chatbot-pity-ia-nbnhnjscbk8htyftxdzxm5.streamlit.app/) 👈
+### 👉 [**Access Pity-IA Studio now**](https://chatbot-pity-ia-nbnhnjscbk8htyftxdzxm5.streamlit.app/) 👈
 
-*Hospedado no Streamlit Cloud · Sem instalação necessária*
+*Hosted on Streamlit Cloud · No installation required*
 
 </div>
 
 ---
 
-## 🛠️ Instalação Local
+## 🛠️ Local Installation
 
-### Pré-requisitos
+### Prerequisites
 
 - Python 3.10+
-- Chave de API do [OpenRouter](https://openrouter.ai) (plano gratuito disponível)
+- [OpenRouter](https://openrouter.ai) API Key (free plan available)
 
 ### Setup
 
 ```bash
-# 1. Clone o repositório
+# 1. Clone the repository
 git clone https://github.com/LeandroTimoteo/chatbot-Pity-IA.git
 cd chatbot-Pity-IA
 
-# 2. Crie e ative o ambiente virtual
+# 2. Create and activate the virtual environment
 python -m venv venv
 venv\Scripts\activate        # Windows
 # source venv/bin/activate   # Linux/Mac
 
-# 3. Instale as dependências
+# 3. Install dependencies
 pip install -r requirements.txt
 
-# 4. Configure as variáveis de ambiente
-#    Crie um arquivo .env na raiz do projeto:
-echo OPENROUTER_API_KEY=sua_chave_aqui > .env
+# 4. Configure environment variables
+#    Create a .env file in the project root:
+echo OPENROUTER_API_KEY=your_key_here > .env
 echo OPENROUTER_MODEL=nvidia/nemotron-3-nano-30b-a3b:free >> .env
 ```
 
-### Executar
+### Run
 
 ```bash
-# Streamlit (recomendado)
+# Streamlit (recommended)
 streamlit run modules/app.py --server.port 8502
 
-# FastAPI (alternativo)
+# FastAPI (alternative)
 python -m uvicorn fastapi_app:app --host 127.0.0.1 --port 8503 --reload
 ```
 
-Acesse: **http://localhost:8502** (Streamlit) ou **http://localhost:8503** (FastAPI)
+Access: **http://localhost:8502** (Streamlit) or **http://localhost:8503** (FastAPI)
 
 ---
 
-## ☁️ Deploy no Streamlit Cloud
+## ☁️ Deployment on Streamlit Cloud
 
-1. Faça fork ou push do repositório para o GitHub
-2. Acesse [share.streamlit.io](https://share.streamlit.io)
-3. Clique em **"New app"** e selecione o repositório
-4. Defina o caminho do app: `modules/app.py`
-5. Em **Secrets**, adicione:
+1. Fork or push the repository to GitHub
+2. Go to [share.streamlit.io](https://share.streamlit.io)
+3. Click on **"New app"** and select the repository
+4. Set the app path: `modules/app.py`
+5. In **Secrets**, add:
    ```toml
-   OPENROUTER_API_KEY = "sua_chave_aqui"
+   OPENROUTER_API_KEY = "your_key_here"
    ```
-6. Clique em **Deploy!**
+6. Click on **Deploy!**
 
 ---
 
-## 🔒 Segurança
+## 🔒 Security
 
-O Pity-IA Studio implementa múltiplas camadas de segurança:
+Pity-IA Studio implements multiple security layers:
 
-| Proteção | Detalhes |
+| Protection | Details |
 |----------|----------|
-| **XSS Prevention** | Todo input do usuário é escapado com `html.escape()` antes da renderização |
-| **Sessões Isoladas** | Cada usuário tem seu próprio histórico de conversa via `st.session_state` |
-| **Rate Limiting** | Máximo de 30 mensagens por minuto por sessão/IP |
-| **Input Validation** | Prompts limitados a 4.000 caracteres com sanitização |
-| **XSRF Protection** | Habilitado via configuração do Streamlit |
+| **XSS Prevention** | All user input is escaped with `html.escape()` before rendering |
+| **Isolated Sessions** | Each user has their own conversation history via `st.session_state` |
+| **Rate Limiting** | Maximum of 30 messages per minute per session/IP |
+| **Input Validation** | Prompts limited to 4,000 characters with sanitization |
+| **XSRF Protection** | Enabled via Streamlit configuration |
 | **Security Headers** | `X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy` (FastAPI) |
-| **CORS Restrito** | Apenas origens autorizadas podem acessar a API |
-| **Secrets Management** | Chaves de API gerenciadas via `st.secrets` / variáveis de ambiente |
+| **Strict CORS** | Only authorized origins can access the API |
+| **Secrets Management** | API keys managed via `st.secrets` / environment variables |
 
 ---
 
-## 📁 Estrutura do Projeto
+## 📁 Project Structure
 
-```
+```text
 chatbot-Pity-IA/
 ├── modules/
-│   ├── app.py              # 🎨 App principal Streamlit (UI + segurança)
-│   ├── online.py           # 🧠 Integração com OpenRouter API
-│   ├── speak.py            # 🔊 Síntese de fala (gTTS)
-│   ├── transcribe.py       # 🎤 Transcrição de áudio (SpeechRecognition)
-│   └── gemini_response.py  # 🔮 Módulo Gemini (alternativo)
+│   ├── app.py              # 🎨 Main Streamlit App (UI + security)
+│   ├── online.py           # 🧠 Integration with OpenRouter API
+│   ├── speak.py            # 🔊 Speech synthesis (gTTS)
+│   ├── transcribe.py       # 🎤 Audio transcription (SpeechRecognition)
+│   └── gemini_response.py  # 🔮 Gemini module (alternative)
 ├── web/
-│   ├── index.html          # 🌐 Frontend FastAPI
+│   ├── index.html          # 🌐 FastAPI Frontend
 │   └── static/
-│       ├── app.css         # 🎨 Estilos premium
-│       └── app.js          # ⚡ Lógica do frontend
-├── fastapi_app.py          # 🚀 API REST com FastAPI
+│       ├── app.css         # 🎨 Premium styles
+│       └── app.js          # ⚡ Frontend logic
+├── fastapi_app.py          # 🚀 REST API with FastAPI
 ├── .streamlit/
-│   ├── config.toml         # ⚙️ Configuração local
-│   └── cloud.toml          # ☁️ Configuração do Cloud
-├── requirements.txt        # 📦 Dependências Python
-├── .gitignore              # 🚫 Arquivos ignorados pelo Git
-├── LICENSE                 # 📄 Licença MIT
-└── README.md               # 📖 Este arquivo
+│   ├── config.toml         # ⚙️ Local configuration
+│   └── cloud.toml          # ☁️ Cloud configuration
+├── requirements.txt        # 📦 Python dependencies
+├── .gitignore              # 🚫 Git ignored files
+├── LICENSE                 # 📄 MIT License
+└── README.md               # 📖 This file
 ```
 
 ---
@@ -156,45 +156,45 @@ chatbot-Pity-IA/
 
 <div align="center">
 
-| Camada | Tecnologia | Uso |
+| Layer | Technology | Usage |
 |--------|-----------|-----|
-| **Frontend** | Streamlit | Interface principal do chatbot |
-| **Frontend Alt.** | HTML/CSS/JS | Interface FastAPI com glassmorphism |
-| **Backend** | FastAPI | API REST alternativa |
-| **IA** | OpenRouter API | Acesso a modelos (Nemotron, etc.) |
-| **TTS** | gTTS | Síntese de fala em múltiplos idiomas |
-| **STT** | SpeechRecognition | Transcrição de áudio |
-| **Deploy** | Streamlit Cloud | Hospedagem gratuita |
+| **Frontend** | Streamlit | Main chatbot interface |
+| **Alt. Frontend** | HTML/CSS/JS | FastAPI interface with glassmorphism |
+| **Backend** | FastAPI | Alternative REST API |
+| **AI** | OpenRouter API | Access to models (Nemotron, etc.) |
+| **TTS** | gTTS | Speech synthesis in multiple languages |
+| **STT** | SpeechRecognition | Audio transcription |
+| **Deployment** | Streamlit Cloud | Free hosting |
 
 </div>
 
 ---
 
-## 📝 Exemplos de Uso
+## 📝 Usage Examples
 
-```
-💬 "Crie um plano de estudos para Python em 30 dias"
-💬 "Explique o que é uma API REST de forma simples"
-💬 "Resuma este texto em 5 linhas"
+```text
+💬 "Create a 30-day Python study plan"
+💬 "Explain what a REST API is in simple terms"
+💬 "Summarize this text in 5 lines"
 💬 "Create a marketing strategy for a small business"
 💬 "Explain the difference between SQL and NoSQL"
 ```
 
 ---
 
-## 🤝 Contribuindo
+## 🤝 Contributing
 
-Contribuições são bem-vindas! Para contribuir:
+Contributions are welcome! To contribute:
 
-1. Faça um **Fork** do projeto
-2. Crie sua **Feature Branch** (`git checkout -b feature/MinhaFeature`)
-3. Commit suas mudanças (`git commit -m 'feat: adicionar MinhaFeature'`)
-4. Push para a branch (`git push origin feature/MinhaFeature`)
-5. Abra um **Pull Request**
+1. **Fork** the project
+2. Create your **Feature Branch** (`git checkout -b feature/MyFeature`)
+3. Commit your changes (`git commit -m 'feat: add MyFeature'`)
+4. Push to the branch (`git push origin feature/MyFeature`)
+5. Open a **Pull Request**
 
 ---
 
-## 👤 Autor
+## 👤 Author
 
 <div align="center">
 
@@ -211,16 +211,16 @@ Software Engineer
 
 ---
 
-## 📄 Licença
+## 📄 License
 
-Este projeto está sob a licença **MIT**. Veja o arquivo [LICENSE](LICENSE) para mais detalhes.
+This project is licensed under the **MIT** License. See the [LICENSE](LICENSE) file for details.
 
 ---
 
 <div align="center">
 
-**[Leandro Timóteo Engenharia de software](https://github.com/LeandroTimoteo)**
+**[Leandro Timóteo Software Engineering](https://github.com/LeandroTimoteo)**
 
-⭐ Se este projeto te ajudou, considere dar uma estrela no GitHub!
+⭐ If this project helped you, consider giving it a star on GitHub!
 
 </div>
