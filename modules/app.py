@@ -657,7 +657,7 @@ st.markdown(
     <div style="text-align: center; margin-top: 2rem; padding: 0.8rem;
          border-top: 1px solid rgba(255,255,255,0.1);">
         <span style="color: var(--muted); font-size: .78rem;">
-            © 2025-2026 Pity-IA Studio · Leandro Timoteo · v{APP_VERSION}
+            © 2025-2026 Pity-IA Studio · Leandro Timóteo Engenharia de software · v{APP_VERSION}
         </span>
     </div>
     """,

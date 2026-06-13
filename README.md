@@ -219,7 +219,7 @@ Este projeto está sob a licença **MIT**. Veja o arquivo [LICENSE](LICENSE) par
 
 <div align="center">
 
-**Desenvolvido com ❤️ por [Leandro Timoteo](https://github.com/LeandroTimoteo)**
+**[Leandro Timóteo Engenharia de software](https://github.com/LeandroTimoteo)**
 
 ⭐ Se este projeto te ajudou, considere dar uma estrela no GitHub!
 
