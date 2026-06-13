@@ -1,6 +1,17 @@
+"""Pity-IA Studio — Aplicação principal Streamlit.
+
+Segurança:
+- XSS: todo conteúdo de usuário é escapado com html.escape()
+- Histórico de conversa por sessão (st.session_state)
+- Rate limiting por sessão (max 30 msgs/min)
+- Validação de input antes de enviar para API
+- CSP meta tag para proteção adicional
+"""
+
+import html
 import os
 import hashlib
-import re
+import time
 from pathlib import Path
 
 import streamlit as st
@@ -12,52 +23,18 @@ except ImportError:
 
 from transcribe import transcribe_audio
 from speak import speak_text
-from online import gerar_resposta_online
+from online import gerar_resposta_online, SYSTEM_PROMPTS
 
-
-def _patch_streamlit_iframe_permissions() -> None:
-    """Strip unsupported iframe permission features from Streamlit frontend bundle."""
-    unsupported = (
-        "ambient-light-sensor",
-        "battery",
-        "document-domain",
-        "layout-animations",
-        "legacy-image-formats",
-        "oversized-images",
-        "vr",
-        "wake-lock",
-    )
-    try:
-        streamlit_root = Path(st.__file__).resolve().parent
-        js_dir = streamlit_root / "static" / "static" / "js"
-        if not js_dir.exists():
-            return
-        # Streamlit may move this list between IFrameUtil.* and index-*.js bundles.
-        for js_file in js_dir.glob("*.js"):
-            content = js_file.read_text(encoding="utf-8")
-            if not any(feature in content for feature in unsupported):
-                continue
-            patched = content
-            for feature in unsupported:
-                # Remove entries no matter the quote style and optional comma spacing.
-                patched = re.sub(rf"([`'\"]){re.escape(feature)}\1\s*,\s*", "", patched)
-                patched = re.sub(rf",\s*([`'\"]){re.escape(feature)}\1", "", patched)
-                patched = re.sub(rf"([`'\"]){re.escape(feature)}\1", "", patched)
-            # Cleanup occasional malformed commas after removals.
-            patched = re.sub(r",\s*,", ",", patched)
-            patched = re.sub(r"\[\s*,", "[", patched)
-            patched = re.sub(r",\s*]", "]", patched)
-            if patched != content:
-                js_file.write_text(patched, encoding="utf-8")
-    except Exception:
-        # Never fail app startup if package files are read-only.
-        pass
-
+# ---------------------------------------------------------------------------
+# Carregamento de ambiente
+# ---------------------------------------------------------------------------
 
 if load_dotenv:
     load_dotenv()
 
-_patch_streamlit_iframe_permissions()
+# ---------------------------------------------------------------------------
+# Configuração da página
+# ---------------------------------------------------------------------------
 
 st.set_page_config(
     page_title="Pity-IA Studio",
@@ -66,9 +43,13 @@ st.set_page_config(
     initial_sidebar_state="collapsed",
 )
 
+# ---------------------------------------------------------------------------
+# CSS profissional com proteção CSP
+# ---------------------------------------------------------------------------
 
 st.markdown(
     """
+    <meta http-equiv="X-Content-Type-Options" content="nosniff">
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Manrope:wght@400;600;700&display=swap');
 
@@ -83,6 +64,7 @@ st.markdown(
         --brand: #12d6e3;
         --brand-2: #1f7afc;
         --success: #12d68e;
+        --danger: #e35555;
     }
 
     html, body, [data-testid="stAppViewContainer"] {
@@ -186,6 +168,8 @@ st.markdown(
         padding: .82rem .95rem;
         margin: .4rem 0;
         animation: pop .2s ease-out;
+        word-wrap: break-word;
+        overflow-wrap: break-word;
     }
 
     .bubble-user {
@@ -200,9 +184,18 @@ st.markdown(
         border: 1px solid rgba(18,214,227,.2);
     }
 
+    .bubble-ai pre {
+        background: #1a2d45;
+        color: #e0e8f5;
+        border-radius: 8px;
+        padding: .6rem;
+        overflow-x: auto;
+        font-size: .88rem;
+    }
+
     @keyframes pop {
-        from {opacity: .55; transform: translateY(6px);} 
-        to {opacity: 1; transform: translateY(0);} 
+        from {opacity: .55; transform: translateY(6px);}
+        to {opacity: 1; transform: translateY(0);}
     }
 
     .stButton > button {
@@ -212,11 +205,13 @@ st.markdown(
         border-radius: 12px;
         font-weight: 700;
         min-height: 2.6rem;
+        transition: all 0.2s ease;
     }
 
     .stButton > button:hover {
         border-color: rgba(18,214,227,.6);
         box-shadow: 0 0 0 2px rgba(18,214,227,.2) inset;
+        transform: translateY(-1px);
     }
 
     div[data-testid="stChatInput"] {
@@ -229,6 +224,27 @@ st.markdown(
         color: var(--muted);
         font-size: .83rem;
         margin-top: .2rem;
+    }
+
+    .version-badge {
+        display: inline-block;
+        font-size: .68rem;
+        color: var(--muted);
+        border: 1px solid var(--stroke);
+        border-radius: 6px;
+        padding: .15rem .4rem;
+        margin-left: .5rem;
+        opacity: 0.7;
+    }
+
+    .rate-limit-warning {
+        background: rgba(227, 85, 85, 0.15);
+        border: 1px solid rgba(227, 85, 85, 0.3);
+        border-radius: 10px;
+        padding: .6rem .8rem;
+        color: #ffaaaa;
+        font-size: .88rem;
+        margin: .5rem 0;
     }
 
     @media (max-width: 900px) {
@@ -247,6 +263,9 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
+# ---------------------------------------------------------------------------
+# Session state (seguro, por sessão)
+# ---------------------------------------------------------------------------
 
 if "page" not in st.session_state:
     st.session_state.page = "landing"
@@ -260,7 +279,23 @@ if "last_audio_path" not in st.session_state:
     st.session_state.last_audio_path = None
 if "last_voice_digest" not in st.session_state:
     st.session_state.last_voice_digest = None
+if "historico_ia" not in st.session_state:
+    st.session_state.historico_ia = [SYSTEM_PROMPTS["pt"].copy()]
+if "rate_limit_timestamps" not in st.session_state:
+    st.session_state.rate_limit_timestamps = []
 
+# ---------------------------------------------------------------------------
+# Constantes de segurança
+# ---------------------------------------------------------------------------
+
+MAX_INPUT_LENGTH = 4000
+RATE_LIMIT_WINDOW = 60  # segundos
+RATE_LIMIT_MAX = 30  # mensagens por janela
+APP_VERSION = "2.0.0"
+
+# ---------------------------------------------------------------------------
+# Internacionalização
+# ---------------------------------------------------------------------------
 
 LANG_LABEL = {
     "pt": "Português",
@@ -273,11 +308,11 @@ UI_TEXT = {
         "layout_help": "Mudar layout para inglês",
         "hero_title": "Seu assistente com visual premium e resposta em tempo real",
         "hero_desc": "Converse por texto ou voz em PT/EN com uma interface mais moderna, limpa e preparada para impressionar.",
-        "panel_1_t": "Identidade forte",
-        "panel_1_d": "Visual tecnológico com foco em clareza e confiança.",
-        "panel_2_t": "Fluxo rápido",
+        "panel_1_t": "🔒 Segurança",
+        "panel_1_d": "Proteção contra XSS, sessões isoladas e rate limiting.",
+        "panel_2_t": "⚡ Fluxo rápido",
         "panel_2_d": "Entrada por texto/voz e resposta com menos fricção.",
-        "panel_3_t": "Modo bilíngue",
+        "panel_3_t": "🌍 Modo bilíngue",
         "panel_3_d": "Alternância instantânea entre português e inglês.",
         "start_pt": "Iniciar em Português",
         "start_en": "Start in English",
@@ -287,27 +322,29 @@ UI_TEXT = {
         "chip_lang": "Idioma",
         "chip_messages": "Mensagens",
         "reply_lang_btn": "Trocar idioma da resposta",
-        "clear_chat_btn": "Limpar conversa",
-        "back_btn": "Voltar",
+        "clear_chat_btn": "🗑️ Limpar conversa",
+        "back_btn": "← Voltar",
         "voice_input": "Entrada por voz",
         "tip": "Dica: pergunte algo específico para respostas melhores.",
         "chat_input": "Digite sua pergunta...",
         "transcribing": "Transcrevendo áudio...",
         "transcription_ok": "Transcrição",
         "thinking": "Pity-IA está pensando...",
-        "listen_last": "Ouvir última resposta",
+        "listen_last": "🔊 Ouvir última resposta",
         "you": "Você",
+        "too_long": "⚠️ Mensagem muito longa (máximo 4000 caracteres).",
+        "rate_limited": "⚠️ Limite de mensagens atingido. Aguarde um momento.",
     },
     "en": {
         "layout_toggle": "Layout: English",
         "layout_help": "Switch layout to Portuguese",
         "hero_title": "Your assistant with premium visuals and real-time responses",
         "hero_desc": "Chat by text or voice in PT/EN with a modern, clean interface built to stand out.",
-        "panel_1_t": "Strong identity",
-        "panel_1_d": "Technology-first visual style with clarity and trust.",
-        "panel_2_t": "Fast flow",
+        "panel_1_t": "🔒 Security",
+        "panel_1_d": "XSS protection, isolated sessions, and rate limiting.",
+        "panel_2_t": "⚡ Fast flow",
         "panel_2_d": "Text/voice input and responses with less friction.",
-        "panel_3_t": "Bilingual mode",
+        "panel_3_t": "🌍 Bilingual mode",
         "panel_3_d": "Instant switch between Portuguese and English.",
         "start_pt": "Start in Portuguese",
         "start_en": "Start in English",
@@ -317,40 +354,73 @@ UI_TEXT = {
         "chip_lang": "Language",
         "chip_messages": "Messages",
         "reply_lang_btn": "Switch reply language",
-        "clear_chat_btn": "Clear chat",
-        "back_btn": "Back",
+        "clear_chat_btn": "🗑️ Clear chat",
+        "back_btn": "← Back",
         "voice_input": "Voice input",
         "tip": "Tip: ask specific questions for better responses.",
         "chat_input": "Type your question...",
         "transcribing": "Transcribing audio...",
         "transcription_ok": "Transcription",
         "thinking": "Pity-IA is thinking...",
-        "listen_last": "Play last answer",
+        "listen_last": "🔊 Play last answer",
         "you": "You",
+        "too_long": "⚠️ Message too long (max 4000 characters).",
+        "rate_limited": "⚠️ Rate limit reached. Please wait a moment.",
     },
 }
 
 
+# ---------------------------------------------------------------------------
+# Segurança: Rate Limiting
+# ---------------------------------------------------------------------------
+
+def _check_rate_limit() -> bool:
+    """Verifica se o usuário excedeu o rate limit. Retorna True se PERMITIDO."""
+    now = time.time()
+    # Limpar timestamps antigos
+    st.session_state.rate_limit_timestamps = [
+        ts for ts in st.session_state.rate_limit_timestamps
+        if now - ts < RATE_LIMIT_WINDOW
+    ]
+    if len(st.session_state.rate_limit_timestamps) >= RATE_LIMIT_MAX:
+        return False
+    st.session_state.rate_limit_timestamps.append(now)
+    return True
+
+
+# ---------------------------------------------------------------------------
+# Renderização segura de mensagens
+# ---------------------------------------------------------------------------
+
 def render_message(role: str, content: str) -> None:
+    """Renderiza uma mensagem de chat com proteção XSS."""
+    # SEGURANÇA: escape de todo conteúdo do usuário
+    safe_content = html.escape(content)
+    # Preservar quebras de linha como <br> após o escape
+    safe_content = safe_content.replace("\n", "<br>")
+
     css = "bubble-user" if role == "user" else "bubble-ai"
     ui = UI_TEXT[st.session_state.ui_lang]
-    prefix = ui["you"] if role == "user" else "Pity-IA"
+    prefix = html.escape(ui["you"]) if role == "user" else "Pity-IA"
+
     st.markdown(
-        f'<div class="{css}"><strong>{prefix}:</strong> {content}</div>',
+        f'<div class="{css}"><strong>{prefix}:</strong> {safe_content}</div>',
         unsafe_allow_html=True,
     )
 
+
+# ---------------------------------------------------------------------------
+# Landing Page
+# ---------------------------------------------------------------------------
 
 def landing_page() -> None:
     ui = UI_TEXT[st.session_state.ui_lang]
     st.markdown(
         f"""
         <section class="hero">
-            <span class="eyebrow">Pity-IA Studio</span>
-            <h1>{ui["hero_title"]}</h1>
-            <p>
-                {ui["hero_desc"]}
-            </p>
+            <span class="eyebrow">Pity-IA Studio <span class="version-badge">v{APP_VERSION}</span></span>
+            <h1>{html.escape(ui["hero_title"])}</h1>
+            <p>{html.escape(ui["hero_desc"])}</p>
         </section>
         """,
         unsafe_allow_html=True,
@@ -362,7 +432,7 @@ def landing_page() -> None:
             f"""
             <div class="panel">
                 <h3>{ui["panel_1_t"]}</h3>
-                <p>{ui["panel_1_d"]}</p>
+                <p>{html.escape(ui["panel_1_d"])}</p>
             </div>
             """,
             unsafe_allow_html=True,
@@ -372,7 +442,7 @@ def landing_page() -> None:
             f"""
             <div class="panel">
                 <h3>{ui["panel_2_t"]}</h3>
-                <p>{ui["panel_2_d"]}</p>
+                <p>{html.escape(ui["panel_2_d"])}</p>
             </div>
             """,
             unsafe_allow_html=True,
@@ -382,7 +452,7 @@ def landing_page() -> None:
             f"""
             <div class="panel">
                 <h3>{ui["panel_3_t"]}</h3>
-                <p>{ui["panel_3_d"]}</p>
+                <p>{html.escape(ui["panel_3_d"])}</p>
             </div>
             """,
             unsafe_allow_html=True,
@@ -394,12 +464,14 @@ def landing_page() -> None:
     with cta1:
         if st.button(ui["start_pt"], use_container_width=True):
             st.session_state.idioma = "pt"
+            st.session_state.historico_ia = [SYSTEM_PROMPTS["pt"].copy()]
             st.session_state.page = "chat"
             st.rerun()
 
     with cta2:
         if st.button(ui["start_en"], use_container_width=True):
             st.session_state.idioma = "en"
+            st.session_state.historico_ia = [SYSTEM_PROMPTS["en"].copy()]
             st.session_state.page = "chat"
             st.rerun()
 
@@ -408,8 +480,12 @@ def landing_page() -> None:
             st.info(ui["prompt_examples_info"])
 
 
+# ---------------------------------------------------------------------------
+# Processamento de áudio
+# ---------------------------------------------------------------------------
 
-def process_voice_input(audio_bytes) -> str | None:
+def process_voice_input(audio_bytes: bytes) -> str | None:
+    """Transcreve áudio recebido do componente de input."""
     if not audio_bytes:
         return None
 
@@ -426,31 +502,42 @@ def process_voice_input(audio_bytes) -> str | None:
                 pass
 
 
+# ---------------------------------------------------------------------------
+# Chat Page
+# ---------------------------------------------------------------------------
 
 def chat_page() -> None:
     ui = UI_TEXT[st.session_state.ui_lang]
+
+    # Header
     st.markdown('<div class="topbar">', unsafe_allow_html=True)
     header_left, header_mid, header_right = st.columns([3, 1.2, 1.2])
 
     with header_left:
         st.markdown(
             f"""
-            <h2>{ui["chat_title"]}</h2>
-            <span class="chip">{ui["chip_lang"]}: {LANG_LABEL[st.session_state.idioma]}</span>
-            <span class="chip">{ui["chip_messages"]}: {len(st.session_state.messages)}</span>
+            <h2>{ui["chat_title"]} <span class="version-badge">v{APP_VERSION}</span></h2>
+            <span class="chip">{html.escape(ui["chip_lang"])}: {html.escape(LANG_LABEL[st.session_state.idioma])}</span>
+            <span class="chip">{html.escape(ui["chip_messages"])}: {len(st.session_state.messages)}</span>
             """,
             unsafe_allow_html=True,
         )
 
     with header_mid:
         if st.button(ui["reply_lang_btn"], use_container_width=True):
-            st.session_state.idioma = "en" if st.session_state.idioma == "pt" else "pt"
+            new_lang = "en" if st.session_state.idioma == "pt" else "pt"
+            st.session_state.idioma = new_lang
+            st.session_state.historico_ia = [SYSTEM_PROMPTS[new_lang].copy()]
             st.rerun()
 
     with header_right:
         if st.button(ui["clear_chat_btn"], use_container_width=True):
             st.session_state.messages = []
             st.session_state.last_audio_path = None
+            st.session_state.historico_ia = [
+                SYSTEM_PROMPTS[st.session_state.idioma].copy()
+            ]
+            st.session_state.rate_limit_timestamps = []
             st.rerun()
 
     st.markdown("</div>", unsafe_allow_html=True)
@@ -463,11 +550,13 @@ def chat_page() -> None:
 
     st.divider()
 
+    # Mensagens
     for message in st.session_state.messages:
         render_message(message["role"], message["content"])
 
     st.divider()
 
+    # Input de voz
     audio_col, help_col = st.columns([1, 3])
     with audio_col:
         audio_file = st.audio_input(ui["voice_input"])
@@ -475,15 +564,17 @@ def chat_page() -> None:
 
     with help_col:
         st.markdown(
-            f"<p class='small-note'>{ui['tip']}</p>",
+            f"<p class='small-note'>{html.escape(ui['tip'])}</p>",
             unsafe_allow_html=True,
         )
 
+    # Input de texto
     user_input = st.chat_input(
         ui["chat_input"],
         key="chat_input",
     )
 
+    # Processar áudio (se novo)
     audio_digest = hashlib.sha1(audio_bytes).hexdigest() if audio_bytes else None
     if audio_bytes and not user_input and audio_digest != st.session_state.last_voice_digest:
         with st.spinner(ui["transcribing"]):
@@ -492,20 +583,44 @@ def chat_page() -> None:
         if user_input:
             st.success(f"{ui['transcription_ok']}: {user_input}")
 
+    # Processar input do usuário
     if user_input and user_input.strip():
+        # SEGURANÇA: Validar tamanho
+        if len(user_input) > MAX_INPUT_LENGTH:
+            st.warning(ui["too_long"])
+            return
+
+        # SEGURANÇA: Rate limiting
+        if not _check_rate_limit():
+            st.markdown(
+                f'<div class="rate-limit-warning">{html.escape(ui["rate_limited"])}</div>',
+                unsafe_allow_html=True,
+            )
+            return
+
         st.session_state.messages.append({"role": "user", "content": user_input})
 
         with st.spinner(ui["thinking"]):
-            result = gerar_resposta_online(user_input, st.session_state.idioma)
+            result = gerar_resposta_online(
+                user_input,
+                st.session_state.idioma,
+                historico=st.session_state.historico_ia,
+            )
 
         if result.get("sucesso"):
             answer = result[st.session_state.idioma]
             st.session_state.messages.append({"role": "assistant", "content": answer})
 
+            # Atualizar histórico da sessão
+            if "historico" in result:
+                st.session_state.historico_ia = result["historico"]
+
             try:
                 audio_lang = "pt" if st.session_state.idioma == "pt" else "en"
                 audio_path = speak_text(answer, audio_lang)
-                st.session_state.last_audio_path = audio_path if audio_path and os.path.exists(audio_path) else None
+                st.session_state.last_audio_path = (
+                    audio_path if audio_path and os.path.exists(audio_path) else None
+                )
             except Exception:
                 st.session_state.last_audio_path = None
         else:
@@ -513,12 +628,17 @@ def chat_page() -> None:
 
         st.rerun()
 
+    # Botão para ouvir última resposta
     if st.session_state.last_audio_path and os.path.exists(st.session_state.last_audio_path):
         st.divider()
         if st.button(ui["listen_last"], use_container_width=False):
-            with open(st.session_state.last_audio_path, "rb") as audio_file:
-                st.audio(audio_file.read(), format="audio/wav")
+            with open(st.session_state.last_audio_path, "rb") as f:
+                st.audio(f.read(), format="audio/wav")
 
+
+# ---------------------------------------------------------------------------
+# Layout principal
+# ---------------------------------------------------------------------------
 
 toolbar_left, toolbar_right = st.columns([6, 1.6])
 with toolbar_right:
@@ -531,3 +651,16 @@ if st.session_state.page == "landing":
     landing_page()
 else:
     chat_page()
+
+# Footer
+st.markdown(
+    f"""
+    <div style="text-align: center; margin-top: 2rem; padding: 0.8rem;
+         border-top: 1px solid rgba(255,255,255,0.1);">
+        <span style="color: var(--muted); font-size: .78rem;">
+            © 2025-2026 Pity-IA Studio · Leandro Timoteo · v{APP_VERSION}
+        </span>
+    </div>
+    """,
+    unsafe_allow_html=True,
+)

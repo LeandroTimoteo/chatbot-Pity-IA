@@ -1,5 +1,5 @@
 # Configuração do Streamlit Cloud
-# Este arquivo é necessário para o Streamlit Cloud funcionar corretamente
+# Segurança e performance otimizados para produção
 
 [client]
 showErrorDetails = false
@@ -8,9 +8,11 @@ toolbarMode = "minimal"
 [server]
 headless = true
 port = 8501
+enableXsrfProtection = true
+enableCORS = false
+
+[browser]
+gatherUsageStats = false
 
 [logger]
 level = "error"
-
-
-

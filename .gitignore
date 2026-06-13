@@ -1,10 +1,60 @@
-env/
-.env
+# ===========================
+# Ambientes virtuais e deps
+# ===========================
 venv/
+env/
+.venv/
 __pycache__/
 *.pyc
+*.pyo
+*.egg-info/
+dist/
+build/
+
+# ===========================
+# Secrets e variáveis de ambiente
+# ===========================
+.env
+.env.*
+.env.local
+.env.production
+.streamlit/secrets.toml
+
+# ===========================
+# Arquivos temporários de áudio
+# ===========================
 audio_temp.wav
 resposta_audio.wav
 modules/resposta.wav
 modules/audio.wav
+tools/resposta.wav
+
+# ===========================
+# Logs
+# ===========================
+*.log
+streamlit.*.log
 pip_log.txt
+
+# ===========================
+# IDE e editor
+# ===========================
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.continue/
+.qodo/
+
+# ===========================
+# OS
+# ===========================
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ===========================
+# Outros
+# ===========================
+.devcontainer/

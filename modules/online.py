@@ -1,14 +1,31 @@
+"""Módulo de integração com a API do OpenRouter para respostas de IA.
+
+Segurança:
+- Histórico de conversa é passado por parâmetro (per-session, não global)
+- Headers reconstruídos a cada request (suporta carregamento tardio de secrets)
+- Input sanitizado e limitado em tamanho
+- Tratamento robusto de exceções
+"""
+
 import os
+import logging
 from pathlib import Path
+
 import requests
 
 try:
     from dotenv import load_dotenv
-except ImportError:  # fallback quando python-dotenv nao estiver instalado
+except ImportError:
     load_dotenv = None
 
+logger = logging.getLogger(__name__)
+
+# ---------------------------------------------------------------------------
+# Carregamento de variáveis de ambiente
+# ---------------------------------------------------------------------------
 
 def _load_env_file(path: Path) -> None:
+    """Fallback manual para carregar .env quando python-dotenv não está instalado."""
     if not path.exists():
         return
     for raw_line in path.read_text(encoding="utf-8").splitlines():
@@ -16,62 +33,126 @@ def _load_env_file(path: Path) -> None:
         if not line or line.startswith("#") or "=" not in line:
             continue
         key, value = line.split("=", 1)
-        os.environ[key.strip()] = value.strip()
+        os.environ.setdefault(key.strip(), value.strip())
 
-# 🔐 Carrega variáveis do .env com fallback para diferentes locais
+
 _this_dir = Path(__file__).resolve().parent
 _root_dir = _this_dir.parent
+
 if load_dotenv:
-    load_dotenv(_root_dir / ".env", override=True)
-    load_dotenv(_this_dir / "env" / ".env", override=True)
-    load_dotenv(_root_dir / "env" / ".env", override=True)
+    load_dotenv(_root_dir / ".env", override=False)
+    load_dotenv(_this_dir / "env" / ".env", override=False)
+    load_dotenv(_root_dir / "env" / ".env", override=False)
 else:
     _load_env_file(_root_dir / ".env")
     _load_env_file(_this_dir / "env" / ".env")
     _load_env_file(_root_dir / "env" / ".env")
 
-# 🔑 Obtém a chave da API (tenta pelo ambiente e pelo st.secrets do Streamlit Cloud)
-api_key = os.getenv("OPENROUTER_API_KEY")
+# ---------------------------------------------------------------------------
+# Configuração da API
+# ---------------------------------------------------------------------------
 
-if not api_key:
-    try:
-        import streamlit as st
-        api_key = st.secrets.get("OPENROUTER_API_KEY")
-    except Exception:
-        pass
+OPENROUTER_API_URL = "https://openrouter.ai/api/v1/chat/completions"
 
-if not api_key:
-    # Apenas avisa no console do servidor em vez de derrubar a aplicação toda
-    print("⚠️ Aviso: OPENROUTER_API_KEY não encontrada. O chat poderá falhar se não configurada nas opções da nuvem.")
-    api_key = ""
+# Limites de segurança
+MAX_PROMPT_LENGTH = 4000
+MAX_HISTORY_MESSAGES = 20
 
-OPENROUTER_MODEL = os.getenv("OPENROUTER_MODEL", "nvidia/nemotron-3-nano-30b-a3b:free")
 FALLBACK_MODELS = [
-    OPENROUTER_MODEL,
+    os.getenv("OPENROUTER_MODEL", "nvidia/nemotron-3-nano-30b-a3b:free"),
     "nvidia/nemotron-nano-9b-v2:free",
     "nvidia/nemotron-nano-12b-v2-vl:free",
 ]
 
-OPENROUTER_API_URL = "https://openrouter.ai/api/v1/chat/completions"
-OPENROUTER_HEADERS = {
-    "Authorization": f"Bearer {api_key}",
-    "Content-Type": "application/json",
-    "HTTP-Referer": os.getenv("APP_PUBLIC_URL", "http://localhost"),
-    "X-Title": os.getenv("APP_NAME", "Chatbot Pity IA"),
+SYSTEM_PROMPTS = {
+    "pt": {
+        "role": "system",
+        "content": (
+            "Você é um assistente útil, amigável e profissional que responde "
+            "em português do Brasil. Responda de forma clara, concisa e sempre "
+            "ajudando o usuário."
+        ),
+    },
+    "en": {
+        "role": "system",
+        "content": (
+            "You are a helpful, friendly and professional assistant that "
+            "responds in English. Answer clearly, concisely and always help "
+            "the user."
+        ),
+    },
 }
 
-# 🧠 Histórico de conversa para manter o contexto
-conversa_pt = [
-    {"role": "system", "content": "Você é um assistente útil, amigável e profissional que responde em português do Brasil. Responda de forma clara, concisa e sempre ajudando o usuário."}
-]
 
-conversa_en = [
-    {"role": "system", "content": "You are a helpful, friendly and professional assistant that responds in English. Answer clearly, concisely and always help the user."}
-]
+def _get_api_key() -> str:
+    """Obtém a chave da API de forma segura, tentando múltiplas fontes."""
+    key = os.getenv("OPENROUTER_API_KEY", "")
+    if not key:
+        try:
+            import streamlit as st
+            key = st.secrets.get("OPENROUTER_API_KEY", "")
+        except Exception:
+            pass
+    if not key:
+        logger.warning(
+            "OPENROUTER_API_KEY não encontrada. "
+            "Configure nas variáveis de ambiente ou em st.secrets."
+        )
+    return key
 
 
-def _chat_completion(messages, temperature=0.7, max_tokens=500):
+def _build_headers() -> dict:
+    """Constrói headers frescos a cada request (suporta carregamento tardio)."""
+    return {
+        "Authorization": f"Bearer {_get_api_key()}",
+        "Content-Type": "application/json",
+        "HTTP-Referer": os.getenv("APP_PUBLIC_URL", "https://chatbot-pity-ia.streamlit.app"),
+        "X-Title": os.getenv("APP_NAME", "Chatbot Pity IA"),
+    }
+
+
+def _sanitize_prompt(prompt: str) -> str:
+    """Sanitiza e valida o prompt do usuário."""
+    if not isinstance(prompt, str):
+        raise ValueError("Prompt deve ser uma string.")
+    cleaned = prompt.strip()
+    if not cleaned:
+        raise ValueError("Prompt não pode ser vazio.")
+    if len(cleaned) > MAX_PROMPT_LENGTH:
+        cleaned = cleaned[:MAX_PROMPT_LENGTH]
+        logger.warning("Prompt truncado para %d caracteres.", MAX_PROMPT_LENGTH)
+    return cleaned
+
+
+def _sanitize_idioma(idioma: str) -> str:
+    """Valida o idioma informado."""
+    idioma = str(idioma).strip().lower()
+    if idioma not in ("pt", "en"):
+        return "pt"
+    return idioma
+
+
+def _trim_history(history: list, max_messages: int = MAX_HISTORY_MESSAGES) -> list:
+    """Mantém o histórico dentro do limite, preservando o system prompt."""
+    if len(history) <= max_messages:
+        return history
+    # Preserva o primeiro (system) + últimas (max-1) mensagens
+    return [history[0]] + history[-(max_messages - 1):]
+
+
+# ---------------------------------------------------------------------------
+# Chamada à API
+# ---------------------------------------------------------------------------
+
+def _chat_completion(
+    messages: list,
+    temperature: float = 0.7,
+    max_tokens: int = 500,
+) -> dict:
+    """Executa a chamada à API com fallback entre modelos."""
     last_error = None
+    headers = _build_headers()
+
     for model in dict.fromkeys(FALLBACK_MODELS):
         try:
             payload = {
@@ -82,98 +163,125 @@ def _chat_completion(messages, temperature=0.7, max_tokens=500):
             }
             response = requests.post(
                 OPENROUTER_API_URL,
-                headers=OPENROUTER_HEADERS,
+                headers=headers,
                 json=payload,
                 timeout=90,
             )
             if response.status_code >= 400:
                 raise RuntimeError(
-                    f"Error code: {response.status_code} - {response.text}"
+                    f"API error {response.status_code}: {response.text[:200]}"
                 )
             return response.json()
         except Exception as exc:
             last_error = exc
+            logger.warning("Modelo %s falhou: %s", model, exc)
             continue
+
     raise last_error if last_error else RuntimeError("Falha na chamada de API.")
 
-def gerar_resposta_online(prompt: str, idioma: str = "pt") -> dict:
-    """
-    Gera uma resposta bilíngue usando o modelo de IA do OpenRouter.
+
+# ---------------------------------------------------------------------------
+# Interface pública
+# ---------------------------------------------------------------------------
+
+def gerar_resposta_online(
+    prompt: str,
+    idioma: str = "pt",
+    historico: list | None = None,
+) -> dict:
+    """Gera uma resposta bilíngue usando o modelo de IA do OpenRouter.
 
     Args:
-        prompt (str): A pergunta ou mensagem do usuário.
-        idioma (str): Idioma da resposta ("pt" para português, "en" para inglês)
+        prompt: A pergunta ou mensagem do usuário.
+        idioma: Idioma da resposta ("pt" ou "en").
+        historico: Lista de mensagens da sessão do usuário (mutável).
+                   Se None, cria uma lista temporária sem persistência.
 
     Returns:
-        dict: Um dicionário com respostas em português e inglês.
+        dict com chaves "pt", "en", "sucesso", e "historico" atualizado.
     """
     try:
-        # Seleciona o histórico baseado no idioma
-        conversa_atual = conversa_pt if idioma == "pt" else conversa_en
-        
-        # Adiciona a entrada do usuário ao histórico
-        conversa_atual.append({"role": "user", "content": prompt})
+        idioma = _sanitize_idioma(idioma)
+        prompt = _sanitize_prompt(prompt)
 
-        # 🔁 Limita o histórico a 20 mensagens (mantém o system + últimas 19)
-        if len(conversa_atual) > 20:
-            conversa_atual[:] = [conversa_atual[0]] + conversa_atual[-19:]
+        # Usa o histórico da sessão ou cria um temporário
+        if historico is None:
+            historico = [SYSTEM_PROMPTS[idioma].copy()]
 
-        # Chamada à API para obter resposta
+        # Garante que o system prompt está presente
+        if not historico or historico[0].get("role") != "system":
+            historico.insert(0, SYSTEM_PROMPTS[idioma].copy())
+
+        # Adiciona a mensagem do usuário
+        historico.append({"role": "user", "content": prompt})
+
+        # Limita o tamanho do histórico
+        historico[:] = _trim_history(historico)
+
+        # Chamada à API
         response = _chat_completion(
-            messages=conversa_atual,
+            messages=historico,
             temperature=0.7,
             max_tokens=500,
         )
 
         # Extrai a resposta
         resposta_idioma = response["choices"][0]["message"]["content"].strip()
-        conversa_atual.append({"role": "assistant", "content": resposta_idioma})
-        
-        # Se resposta em português, traduz para inglês e vice-versa
+        historico.append({"role": "assistant", "content": resposta_idioma})
+
+        # Traduz para o outro idioma
         if idioma == "pt":
             resposta_pt = resposta_idioma
-            resposta_en = traduzir_resposta(resposta_idioma, "pt_to_en")
+            resposta_en = _traduzir_resposta(resposta_idioma, "pt_to_en")
         else:
             resposta_en = resposta_idioma
-            resposta_pt = traduzir_resposta(resposta_idioma, "en_to_pt")
-        
+            resposta_pt = _traduzir_resposta(resposta_idioma, "en_to_pt")
+
         return {
             "pt": resposta_pt,
             "en": resposta_en,
-            "sucesso": True
+            "sucesso": True,
+            "historico": historico,
         }
 
-    except Exception as e:
+    except ValueError as ve:
+        logger.warning("Input inválido: %s", ve)
         return {
-            "pt": f"⚠️ Erro ao gerar resposta: {str(e)}",
-            "en": f"⚠️ Error generating response: {str(e)}",
-            "sucesso": False
+            "pt": f"⚠️ Entrada inválida: {ve}",
+            "en": f"⚠️ Invalid input: {ve}",
+            "sucesso": False,
+        }
+    except Exception as exc:
+        logger.error("Erro ao gerar resposta: %s", exc, exc_info=True)
+        return {
+            "pt": f"⚠️ Erro ao gerar resposta: {exc}",
+            "en": f"⚠️ Error generating response: {exc}",
+            "sucesso": False,
         }
 
-def traduzir_resposta(texto: str, direcao: str) -> str:
-    """
-    Traduz a resposta para o outro idioma usando a API.
-    
+
+def _traduzir_resposta(texto: str, direcao: str) -> str:
+    """Traduz a resposta para o outro idioma usando a API.
+
     Args:
-        texto (str): Texto a ser traduzido
-        direcao (str): Direção da tradução ("pt_to_en" ou "en_to_pt")
-    
+        texto: Texto a ser traduzido.
+        direcao: "pt_to_en" ou "en_to_pt".
+
     Returns:
-        str: Texto traduzido
+        Texto traduzido, ou o original se a tradução falhar.
     """
     try:
-        prompt_traducao = f"Traduza este texto para {'inglês' if direcao == 'pt_to_en' else 'português'}:\n\n{texto}\n\nApenas forneça a tradução, sem explicações adicionais."
-        
+        destino = "inglês" if direcao == "pt_to_en" else "português"
+        prompt_traducao = (
+            f"Traduza este texto para {destino}:\n\n{texto}\n\n"
+            "Apenas forneça a tradução, sem explicações adicionais."
+        )
         response = _chat_completion(
             messages=[{"role": "user", "content": prompt_traducao}],
             temperature=0.3,
             max_tokens=300,
         )
-        
         return response["choices"][0]["message"]["content"].strip()
-    except:
-        return texto  # Retorna texto original se tradução falhar
-
-
-
-
+    except Exception as exc:
+        logger.warning("Tradução falhou: %s", exc)
+        return texto
