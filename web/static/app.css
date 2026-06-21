@@ -12,6 +12,21 @@
   --shadow: 0 24px 44px rgba(3, 8, 30, 0.45);
 }
 
+/* Light theme variables (applied when .theme-light is present on body) */
+.theme-light {
+  --bg-blue: #f6f8fb;
+  --bg-purple: #e9eef8;
+  --text-main: #0b1b2b;
+  --text-soft: #425670;
+  --surface: rgba(11, 27, 43, 0.04);
+  --surface-strong: rgba(11, 27, 43, 0.06);
+  --line: rgba(11, 27, 43, 0.06);
+  --user-bubble: #dff4ff;
+  --bot-bubble: #f3f0ff;
+  --white: #071330;
+  --shadow: 0 12px 24px rgba(3, 8, 30, 0.06);
+}
+
 *,
 *::before,
 *::after {

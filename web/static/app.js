@@ -425,3 +425,54 @@ if (synthesisSupported) {
 }
 updateMicButtonState();
 updateVoiceButtonsState();
+
+// ----------------------------
+// Theme toggle: dark/light
+// ----------------------------
+const themeToggleBtn = document.getElementById("themeToggle");
+const themeIcon = document.getElementById("themeIcon");
+const themeLabel = document.getElementById("themeLabel");
+
+function applyTheme(theme) {
+  const isLight = theme === "light";
+  document.body.classList.toggle("theme-light", isLight);
+  if (themeToggleBtn) themeToggleBtn.setAttribute("aria-pressed", String(isLight));
+  if (themeLabel) themeLabel.textContent = isLight ? "Claro" : "Escuro";
+  // update icon path for sun/moon
+  if (themeIcon) {
+    themeIcon.innerHTML = isLight
+      ? `<path d="M12 4.5V2M12 22v-2.5M4.5 12H2M22 12h-2.5M5.636 5.636L4.222 4.222M19.778 19.778l-1.414-1.414M5.636 18.364l-1.414 1.414M19.778 4.222l-1.414 1.414M12 7a5 5 0 100 10 5 5 0 000-10z"></path>`
+      : `<path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"></path>`;
+  }
+}
+
+function detectPreferredTheme() {
+  try {
+    const stored = localStorage.getItem("pity_theme");
+    if (stored === "light" || stored === "dark") return stored;
+  } catch (e) {
+    // ignore localStorage errors
+  }
+  if (window.matchMedia && window.matchMedia("(prefers-color-scheme: light)").matches) {
+    return "light";
+  }
+  return "dark";
+}
+
+function toggleTheme() {
+  const current = document.body.classList.contains("theme-light") ? "light" : "dark";
+  const next = current === "light" ? "dark" : "light";
+  applyTheme(next);
+  try {
+    localStorage.setItem("pity_theme", next);
+  } catch (e) {
+    // ignore
+  }
+}
+
+if (themeToggleBtn) {
+  themeToggleBtn.addEventListener("click", toggleTheme);
+  // initialize theme
+  const initial = detectPreferredTheme();
+  applyTheme(initial);
+}
