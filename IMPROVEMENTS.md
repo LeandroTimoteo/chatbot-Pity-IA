@@ -288,3 +288,5 @@ Para contribuir:
 ---
 
 **Última atualização**: 21 de Junho de 2026
+
+<!-- redeploy-trigger: 2026-06-21T00:00:00Z -->
