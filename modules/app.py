@@ -6,6 +6,7 @@ Segurança:
 - Rate limiting por sessão (max 30 msgs/min)
 - Validação de input antes de enviar para API
 - CSP meta tag para proteção adicional
+- Logging estruturado para monitoramento
 """
 
 import html
@@ -21,9 +22,92 @@ try:
 except ImportError:
     load_dotenv = None
 
+from logger import get_logger
 from transcribe import transcribe_audio
 from speak import speak_text
 from online import gerar_resposta_online, SYSTEM_PROMPTS
+
+# Configurar logging
+logger = get_logger(__name__, log_file="streamlit.log")
+
+# ---------------------------------------------------------------------------
+# Cache e otimizações de performance
+# ---------------------------------------------------------------------------
+
+@st.cache_resource
+def load_system_prompts():
+    """Cache para os system prompts que nunca mudam."""
+    return SYSTEM_PROMPTS
+
+@st.cache_data(ttl=3600)
+def get_ui_translations():
+    """Cache para textos de UI (renovado a cada hora)."""
+    return {
+        "pt": {
+            "layout_toggle": "Layout: Português",
+            "layout_help": "Mudar layout para inglês",
+            "hero_title": "Seu assistente com visual premium e resposta em tempo real",
+            "hero_desc": "Converse por texto ou voz em PT/EN com uma interface mais moderna, limpa e preparada para impressionar.",
+            "panel_1_t": "🔒 Segurança",
+            "panel_1_d": "Proteção contra XSS, sessões isoladas e rate limiting.",
+            "panel_2_t": "⚡ Fluxo rápido",
+            "panel_2_d": "Entrada por texto/voz e resposta com menos fricção.",
+            "panel_3_t": "🌍 Modo bilíngue",
+            "panel_3_d": "Alternância instantânea entre português e inglês.",
+            "start_pt": "Iniciar em Português",
+            "start_en": "Start in English",
+            "prompt_examples": "Exemplos de prompts",
+            "prompt_examples_info": "Exemplos: 'Crie um plano de estudos', 'Explique este erro', 'Resuma meu texto em 5 linhas'.",
+            "chat_title": "🤖 Pity-IA Chat",
+            "chip_lang": "Idioma",
+            "chip_messages": "Mensagens",
+            "reply_lang_btn": "Trocar idioma da resposta",
+            "clear_chat_btn": "🗑️ Limpar conversa",
+            "back_btn": "← Voltar",
+            "voice_input": "Entrada por voz",
+            "tip": "Dica: pergunte algo específico para respostas melhores.",
+            "chat_input": "Digite sua pergunta...",
+            "transcribing": "Transcrevendo áudio...",
+            "transcription_ok": "Transcrição",
+            "thinking": "Pity-IA está pensando...",
+            "listen_last": "🔊 Ouvir última resposta",
+            "you": "Você",
+            "too_long": "⚠️ Mensagem muito longa (máximo 4000 caracteres).",
+            "rate_limited": "⚠️ Limite de mensagens atingido. Aguarde um momento.",
+        },
+        "en": {
+            "layout_toggle": "Layout: English",
+            "layout_help": "Switch layout to Portuguese",
+            "hero_title": "Your assistant with premium visuals and real-time responses",
+            "hero_desc": "Chat by text or voice in PT/EN with a modern, clean interface built to stand out.",
+            "panel_1_t": "🔒 Security",
+            "panel_1_d": "XSS protection, isolated sessions, and rate limiting.",
+            "panel_2_t": "⚡ Fast flow",
+            "panel_2_d": "Text/voice input and responses with less friction.",
+            "panel_3_t": "🌍 Bilingual mode",
+            "panel_3_d": "Instant switch between Portuguese and English.",
+            "start_pt": "Start in Portuguese",
+            "start_en": "Start in English",
+            "prompt_examples": "Prompt examples",
+            "prompt_examples_info": "Examples: 'Create a study plan', 'Explain this error', 'Summarize my text in 5 lines'.",
+            "chat_title": "🤖 Pity-IA Chat",
+            "chip_lang": "Language",
+            "chip_messages": "Messages",
+            "reply_lang_btn": "Change response language",
+            "clear_chat_btn": "🗑️ Clear chat",
+            "back_btn": "← Back",
+            "voice_input": "Voice input",
+            "tip": "Tip: ask something specific for better responses.",
+            "chat_input": "Type your question...",
+            "transcribing": "Transcribing audio...",
+            "transcription_ok": "Transcription",
+            "thinking": "Pity-IA is thinking...",
+            "listen_last": "🔊 Listen to last response",
+            "you": "You",
+            "too_long": "⚠️ Message too long (maximum 4000 characters).",
+            "rate_limited": "⚠️ Message limit reached. Please wait a moment.",
+        }
+    }
 
 # ---------------------------------------------------------------------------
 # Carregamento de ambiente
@@ -278,8 +362,10 @@ if "last_audio_path" not in st.session_state:
     st.session_state.last_audio_path = None
 if "last_voice_digest" not in st.session_state:
     st.session_state.last_voice_digest = None
+# Usar cache para prompts de sistema
+_cached_system_prompts = load_system_prompts()
 if "historico_ia" not in st.session_state:
-    st.session_state.historico_ia = [SYSTEM_PROMPTS["pt"].copy()]
+    st.session_state.historico_ia = [_cached_system_prompts["pt"].copy()]
 if "rate_limit_timestamps" not in st.session_state:
     st.session_state.rate_limit_timestamps = []
 
@@ -301,72 +387,8 @@ LANG_LABEL = {
     "en": "English",
 }
 
-UI_TEXT = {
-    "pt": {
-        "layout_toggle": "Layout: Português",
-        "layout_help": "Mudar layout para inglês",
-        "hero_title": "Seu assistente com visual premium e resposta em tempo real",
-        "hero_desc": "Converse por texto ou voz em PT/EN com uma interface mais moderna, limpa e preparada para impressionar.",
-        "panel_1_t": "🔒 Segurança",
-        "panel_1_d": "Proteção contra XSS, sessões isoladas e rate limiting.",
-        "panel_2_t": "⚡ Fluxo rápido",
-        "panel_2_d": "Entrada por texto/voz e resposta com menos fricção.",
-        "panel_3_t": "🌍 Modo bilíngue",
-        "panel_3_d": "Alternância instantânea entre português e inglês.",
-        "start_pt": "Iniciar em Português",
-        "start_en": "Start in English",
-        "prompt_examples": "Exemplos de prompts",
-        "prompt_examples_info": "Exemplos: 'Crie um plano de estudos', 'Explique este erro', 'Resuma meu texto em 5 linhas'.",
-        "chat_title": "🤖 Pity-IA Chat",
-        "chip_lang": "Idioma",
-        "chip_messages": "Mensagens",
-        "reply_lang_btn": "Trocar idioma da resposta",
-        "clear_chat_btn": "🗑️ Limpar conversa",
-        "back_btn": "← Voltar",
-        "voice_input": "Entrada por voz",
-        "tip": "Dica: pergunte algo específico para respostas melhores.",
-        "chat_input": "Digite sua pergunta...",
-        "transcribing": "Transcrevendo áudio...",
-        "transcription_ok": "Transcrição",
-        "thinking": "Pity-IA está pensando...",
-        "listen_last": "🔊 Ouvir última resposta",
-        "you": "Você",
-        "too_long": "⚠️ Mensagem muito longa (máximo 4000 caracteres).",
-        "rate_limited": "⚠️ Limite de mensagens atingido. Aguarde um momento.",
-    },
-    "en": {
-        "layout_toggle": "Layout: English",
-        "layout_help": "Switch layout to Portuguese",
-        "hero_title": "Your assistant with premium visuals and real-time responses",
-        "hero_desc": "Chat by text or voice in PT/EN with a modern, clean interface built to stand out.",
-        "panel_1_t": "🔒 Security",
-        "panel_1_d": "XSS protection, isolated sessions, and rate limiting.",
-        "panel_2_t": "⚡ Fast flow",
-        "panel_2_d": "Text/voice input and responses with less friction.",
-        "panel_3_t": "🌍 Bilingual mode",
-        "panel_3_d": "Instant switch between Portuguese and English.",
-        "start_pt": "Start in Portuguese",
-        "start_en": "Start in English",
-        "prompt_examples": "Prompt examples",
-        "prompt_examples_info": "Examples: 'Create a study plan', 'Explain this error', 'Summarize my text in 5 lines'.",
-        "chat_title": "🤖 Pity-IA Chat",
-        "chip_lang": "Language",
-        "chip_messages": "Messages",
-        "reply_lang_btn": "Switch reply language",
-        "clear_chat_btn": "🗑️ Clear chat",
-        "back_btn": "← Back",
-        "voice_input": "Voice input",
-        "tip": "Tip: ask specific questions for better responses.",
-        "chat_input": "Type your question...",
-        "transcribing": "Transcribing audio...",
-        "transcription_ok": "Transcription",
-        "thinking": "Pity-IA is thinking...",
-        "listen_last": "🔊 Play last answer",
-        "you": "You",
-        "too_long": "⚠️ Message too long (max 4000 characters).",
-        "rate_limited": "⚠️ Rate limit reached. Please wait a moment.",
-    },
-}
+# UI_TEXT agora usa cache
+UI_TEXT = get_ui_translations()
 
 
 # ---------------------------------------------------------------------------

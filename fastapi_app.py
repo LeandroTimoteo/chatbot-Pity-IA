@@ -6,6 +6,7 @@ Segurança:
 - Rate limiting simples por IP
 - Validação e sanitização de input
 - Sem exposição de dados internos na resposta
+- Logging estruturado para monitoramento
 """
 
 import html
@@ -20,7 +21,12 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, field_validator
 from starlette.middleware.base import BaseHTTPMiddleware
 
+from modules.logger import get_logger, setup_logging
 from modules.online import gerar_resposta_online
+
+# Configurar logging
+setup_logging(debug=False)
+logger = get_logger(__name__, log_file="fastapi.log")
 
 # ---------------------------------------------------------------------------
 # Configuração
@@ -57,6 +63,10 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
             ]
 
             if len(_rate_limit_store[client_ip]) >= RATE_LIMIT_MAX:
+                logger.warning(
+                    f"Rate limit exceeded for IP {client_ip} "
+                    f"({len(_rate_limit_store[client_ip])} requests in {RATE_LIMIT_WINDOW}s)"
+                )
                 return JSONResponse(
                     status_code=429,
                     content={"detail": "Rate limit exceeded. Try again later."},
@@ -158,12 +168,14 @@ class ChatRequest(BaseModel):
 @app.get("/")
 def home() -> FileResponse:
     """Serve a página principal."""
+    logger.debug("Serving index.html")
     return FileResponse(INDEX_FILE)
 
 
 @app.get("/health")
 def health() -> dict[str, str]:
     """Health check endpoint."""
+    logger.debug("Health check requested")
     return {"status": "ok", "version": "2.0.0"}
 
 
@@ -173,16 +185,25 @@ def chat(payload: ChatRequest) -> dict:
 
     Retorna resposta no idioma selecionado, sem expor dados internos.
     """
-    resposta = gerar_resposta_online(payload.prompt, payload.idioma)
+    logger.info(f"Chat request: idioma={payload.idioma}, prompt_len={len(payload.prompt)}")
+    
+    try:
+        resposta = gerar_resposta_online(payload.prompt, payload.idioma)
 
-    if not isinstance(resposta, dict):
-        raise HTTPException(status_code=500, detail="Erro interno.")
+        if not isinstance(resposta, dict):
+            logger.error("Invalid response format from gerar_resposta_online")
+            raise HTTPException(status_code=500, detail="Erro interno.")
 
-    sucesso = bool(resposta.get("sucesso"))
-    texto = resposta.get(payload.idioma, "")
+        sucesso = bool(resposta.get("sucesso"))
+        texto = resposta.get(payload.idioma, "")
+        
+        logger.info(f"Chat response: sucesso={sucesso}, resposta_len={len(texto)}")
 
-    return {
-        "ok": sucesso,
-        "idioma": payload.idioma,
-        "texto": texto,
-    }
+        return {
+            "ok": sucesso,
+            "idioma": payload.idioma,
+            "texto": texto,
+        }
+    except Exception as e:
+        logger.error(f"Chat endpoint error: {type(e).__name__}: {str(e)}", exc_info=True)
+        raise

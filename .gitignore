@@ -10,6 +10,9 @@ __pycache__/
 *.egg-info/
 dist/
 build/
+.pytest_cache/
+.coverage
+htmlcov/
 
 # ===========================
 # Secrets e variáveis de ambiente
@@ -35,6 +38,7 @@ tools/resposta.wav
 *.log
 streamlit.*.log
 pip_log.txt
+logs/
 
 # ===========================
 # IDE e editor
@@ -53,6 +57,16 @@ pip_log.txt
 .DS_Store
 Thumbs.db
 desktop.ini
+
+# ===========================
+# Cache e Temp
+# ===========================
+.cache/
+cache/
+temp/
+tmp/
+*.tmp
+*.temp
 
 # ===========================
 # Outros
