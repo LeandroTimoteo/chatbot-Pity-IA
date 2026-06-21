@@ -5,11 +5,14 @@ Segurança:
 - Headers reconstruídos a cada request (suporta carregamento tardio de secrets)
 - Input sanitizado e limitado em tamanho
 - Tratamento robusto de exceções
+- Logging estruturado para monitoramento
+- Cache automático de respostas com TTL
 """
 
 import os
-import logging
+import time
 from pathlib import Path
+from functools import wraps
 
 import requests
 
@@ -18,7 +21,15 @@ try:
 except ImportError:
     load_dotenv = None
 
-logger = logging.getLogger(__name__)
+from logger import get_logger
+from cache import cached_response, get_cache_stats
+
+# Configurar logging
+logger = get_logger(__name__, log_file="online.log")
+
+# Constantes de retry
+MAX_RETRIES = 3
+RETRY_DELAY = 1  # segundos
 
 # ---------------------------------------------------------------------------
 # Carregamento de variáveis de ambiente
@@ -149,34 +160,84 @@ def _chat_completion(
     temperature: float = 0.7,
     max_tokens: int = 500,
 ) -> dict:
-    """Executa a chamada à API com fallback entre modelos."""
+    """Executa a chamada à API com fallback entre modelos e retry automático.
+    
+    Implementa retry automático com backoff exponencial e fallback entre modelos.
+    """
     last_error = None
     headers = _build_headers()
 
     for model in dict.fromkeys(FALLBACK_MODELS):
-        try:
-            payload = {
-                "model": model,
-                "messages": messages,
-                "temperature": temperature,
-                "max_tokens": max_tokens,
-            }
-            response = requests.post(
-                OPENROUTER_API_URL,
-                headers=headers,
-                json=payload,
-                timeout=90,
-            )
-            if response.status_code >= 400:
-                raise RuntimeError(
-                    f"API error {response.status_code}: {response.text[:200]}"
+        for attempt in range(1, MAX_RETRIES + 1):
+            try:
+                payload = {
+                    "model": model,
+                    "messages": messages,
+                    "temperature": temperature,
+                    "max_tokens": max_tokens,
+                }
+                
+                logger.debug(
+                    "Tentativa %d/%d para modelo %s",
+                    attempt,
+                    MAX_RETRIES,
+                    model
                 )
-            return response.json()
-        except Exception as exc:
-            last_error = exc
-            logger.warning("Modelo %s falhou: %s", model, exc)
-            continue
-
+                
+                response = requests.post(
+                    OPENROUTER_API_URL,
+                    headers=headers,
+                    json=payload,
+                    timeout=90,
+                )
+                
+                if response.status_code >= 400:
+                    error_msg = f"API error {response.status_code}: {response.text[:200]}"
+                    raise RuntimeError(error_msg)
+                
+                logger.info("Resposta bem-sucedida do modelo %s", model)
+                return response.json()
+                
+            except requests.exceptions.Timeout:
+                last_error = TimeoutError("Timeout na requisição à API")
+                logger.warning(
+                    "Timeout no modelo %s (tentativa %d/%d)",
+                    model,
+                    attempt,
+                    MAX_RETRIES
+                )
+                if attempt < MAX_RETRIES:
+                    time.sleep(RETRY_DELAY * attempt)  # Backoff exponencial
+                    
+            except requests.exceptions.ConnectionError as e:
+                last_error = e
+                logger.warning(
+                    "Erro de conexão no modelo %s (tentativa %d/%d): %s",
+                    model,
+                    attempt,
+                    MAX_RETRIES,
+                    e
+                )
+                if attempt < MAX_RETRIES:
+                    time.sleep(RETRY_DELAY * attempt)
+                    
+            except Exception as exc:
+                last_error = exc
+                logger.warning(
+                    "Erro no modelo %s (tentativa %d/%d): %s",
+                    model,
+                    attempt,
+                    MAX_RETRIES,
+                    exc
+                )
+                if attempt < MAX_RETRIES:
+                    time.sleep(RETRY_DELAY)
+                    
+    logger.error(
+        "Falha em todas as tentativas com todos os modelos. Último erro: %s",
+        last_error,
+        exc_info=True
+    )
     raise last_error if last_error else RuntimeError("Falha na chamada de API.")
 
 
@@ -184,6 +245,7 @@ def _chat_completion(
 # Interface pública
 # ---------------------------------------------------------------------------
 
+@cached_response(ttl=3600)  # Cache de 1 hora
 def gerar_resposta_online(
     prompt: str,
     idioma: str = "pt",
@@ -200,9 +262,13 @@ def gerar_resposta_online(
     Returns:
         dict com chaves "pt", "en", "sucesso", e "historico" atualizado.
     """
+    logger.info("Iniciando geração de resposta | Idioma: %s", idioma)
+    
     try:
         idioma = _sanitize_idioma(idioma)
         prompt = _sanitize_prompt(prompt)
+        
+        logger.debug("Prompt sanitizado: %d caracteres", len(prompt))
 
         # Usa o histórico da sessão ou cria um temporário
         if historico is None:
@@ -214,11 +280,14 @@ def gerar_resposta_online(
 
         # Adiciona a mensagem do usuário
         historico.append({"role": "user", "content": prompt})
+        
+        logger.debug("Histórico contém %d mensagens", len(historico))
 
         # Limita o tamanho do histórico
         historico[:] = _trim_history(historico)
 
         # Chamada à API
+        logger.info("Chamando API OpenRouter...")
         response = _chat_completion(
             messages=historico,
             temperature=0.7,
@@ -228,8 +297,11 @@ def gerar_resposta_online(
         # Extrai a resposta
         resposta_idioma = response["choices"][0]["message"]["content"].strip()
         historico.append({"role": "assistant", "content": resposta_idioma})
+        
+        logger.info("Resposta recebida: %d caracteres", len(resposta_idioma))
 
         # Traduz para o outro idioma
+        logger.info("Iniciando tradução...")
         if idioma == "pt":
             resposta_pt = resposta_idioma
             resposta_en = _traduzir_resposta(resposta_idioma, "pt_to_en")
@@ -237,6 +309,7 @@ def gerar_resposta_online(
             resposta_en = resposta_idioma
             resposta_pt = _traduzir_resposta(resposta_idioma, "en_to_pt")
 
+        logger.info("Resposta gerada com sucesso")
         return {
             "pt": resposta_pt,
             "en": resposta_en,

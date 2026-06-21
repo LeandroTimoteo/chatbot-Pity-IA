@@ -3,3 +3,17 @@ requests>=2.32.0
 gtts>=2.4.0
 python-dotenv>=1.0.0
 SpeechRecognition>=3.10.4
+fastapi>=0.104.0
+uvicorn[standard]>=0.24.0
+pydantic>=2.0.0
+
+# Logging e monitoramento
+loguru>=0.7.0
+
+# Testes e qualidade
+pytest>=7.4.0
+pytest-cov>=4.1.0
+pytest-asyncio>=0.21.0
+
+# Build e CLI
+click>=8.1.0
