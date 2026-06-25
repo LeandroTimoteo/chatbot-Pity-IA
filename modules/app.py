@@ -12,15 +12,11 @@ Segurança:
 import html
 import os
 import hashlib
+import tempfile
 import time
 from pathlib import Path
 
 import streamlit as st
-
-try:
-    from dotenv import load_dotenv
-except ImportError:
-    load_dotenv = None
 
 from logger import get_logger
 from transcribe import transcribe_audio
@@ -110,13 +106,6 @@ def get_ui_translations():
     }
 
 # ---------------------------------------------------------------------------
-# Carregamento de ambiente
-# ---------------------------------------------------------------------------
-
-if load_dotenv:
-    load_dotenv()
-
-# ---------------------------------------------------------------------------
 # Configuração da página
 # ---------------------------------------------------------------------------
 
@@ -124,7 +113,7 @@ st.set_page_config(
     page_title="Pity-IA Studio",
     page_icon="🤖",
     layout="wide",
-    initial_sidebar_state="collapsed",
+    initial_sidebar_state="expanded",
 )
 
 # ---------------------------------------------------------------------------
@@ -157,6 +146,30 @@ st.markdown(
             radial-gradient(1200px 500px at 10% -10%, rgba(18,214,227,.22), transparent 60%),
             radial-gradient(900px 400px at 100% 0%, rgba(31,122,252,.25), transparent 55%),
             linear-gradient(145deg, var(--bg-1), var(--bg-2));
+        background-size: 200% 200%;
+        animation: gradientShift 20s ease-in-out infinite alternate;
+    }
+
+    @keyframes gradientShift {
+        0%   { background-position: 0% 0%; }
+        50%  { background-position: 100% 100%; }
+        100% { background-position: 0% 100%; }
+    }
+
+    [data-testid="stSidebar"] {
+        background: rgba(7, 19, 31, 0.7) !important;
+        backdrop-filter: blur(20px) !important;
+        border-right: 1px solid rgba(255,255,255,0.06) !important;
+    }
+
+    [data-testid="stSidebar"] hr {
+        border-color: rgba(255,255,255,0.08);
+        margin: 1rem 0 !important;
+    }
+
+    [data-testid="stSidebar"] .stButton > button {
+        font-size: .85rem;
+        min-height: 2.3rem;
     }
 
     [data-testid="stMainBlockContainer"] {
@@ -202,37 +215,46 @@ st.markdown(
     .panel {
         margin-top: 1rem;
         border: 1px solid var(--stroke);
-        background: var(--surface);
+        background: linear-gradient(180deg, rgba(255,255,255,.12), rgba(255,255,255,.04));
         border-radius: 18px;
-        padding: 1rem 1.1rem;
+        padding: 1.2rem 1.3rem;
         backdrop-filter: blur(10px);
+        transition: all 0.3s ease;
+    }
+
+    .panel:hover {
+        border-color: rgba(18,214,227,.4);
+        box-shadow: 0 8px 32px rgba(18,214,227,.08);
+        transform: translateY(-2px);
     }
 
     .panel h3 {
         margin: 0 0 .35rem;
         color: #ffffff;
         font-family: 'Space Grotesk', sans-serif;
-        font-size: 1.06rem;
+        font-size: 1.1rem;
     }
 
     .panel p {
         margin: 0;
         color: var(--muted);
-        font-size: .95rem;
+        font-size: .93rem;
+        line-height: 1.5;
     }
 
     .topbar {
         border: 1px solid var(--stroke);
-        background: var(--surface);
+        background: linear-gradient(180deg, rgba(255,255,255,.12), rgba(255,255,255,.04));
         border-radius: 16px;
-        padding: .85rem 1rem;
+        padding: 1rem 1.2rem;
         margin-bottom: .8rem;
+        backdrop-filter: blur(10px);
     }
 
     .topbar h2 {
-        margin: 0;
+        margin: 0 0 .2rem;
         font-family: 'Space Grotesk', sans-serif;
-        font-size: 1.2rem;
+        font-size: 1.25rem;
         color: #ffffff;
     }
 
@@ -246,23 +268,55 @@ st.markdown(
         margin-right: .35rem;
     }
 
-    .bubble-user, .bubble-ai {
-        border-radius: 14px;
-        padding: .82rem .95rem;
-        margin: .4rem 0;
-        animation: pop .2s ease-out;
+    .msg-row {
+        display: flex;
+        gap: .7rem;
+        margin: .6rem 0;
+        animation: pop .25s ease-out;
+        align-items: flex-start;
+    }
+
+    .msg-avatar {
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.2rem;
+        flex-shrink: 0;
+        background: rgba(255,255,255,.08);
+        border: 1px solid rgba(255,255,255,.12);
+        backdrop-filter: blur(4px);
+    }
+
+    .msg-body {
+        border-radius: 16px;
+        padding: .85rem 1.1rem;
         word-wrap: break-word;
         overflow-wrap: break-word;
+        line-height: 1.55;
+        box-shadow: 0 2px 12px rgba(0,0,0,.15);
+        flex: 1;
+        min-width: 0;
     }
 
     .bubble-user {
+        flex-direction: row;
+    }
+
+    .bubble-user .msg-body {
         background: linear-gradient(145deg, var(--brand-2), #1756d3);
         color: #fff;
         border: 1px solid rgba(255,255,255,.18);
     }
 
     .bubble-ai {
-        background: rgba(255,255,255,.92);
+        flex-direction: row;
+    }
+
+    .bubble-ai .msg-body {
+        background: rgba(255,255,255,.93);
         color: #14263a;
         border: 1px solid rgba(18,214,227,.2);
     }
@@ -288,13 +342,24 @@ st.markdown(
         border-radius: 12px;
         font-weight: 700;
         min-height: 2.6rem;
-        transition: all 0.2s ease;
+        transition: all 0.25s ease;
+        letter-spacing: .01em;
     }
 
     .stButton > button:hover {
         border-color: rgba(18,214,227,.6);
         box-shadow: 0 0 0 2px rgba(18,214,227,.2) inset;
-        transform: translateY(-1px);
+        transform: translateY(-2px);
+    }
+
+    .stButton > button[kind="secondary"] {
+        background: rgba(255,255,255,.06);
+        border-color: rgba(255,255,255,.12);
+    }
+
+    .stButton > button[kind="secondary"]:hover {
+        background: rgba(255,255,255,.1);
+        border-color: rgba(18,214,227,.4);
     }
 
     div[data-testid="stChatInput"] {
@@ -303,10 +368,39 @@ st.markdown(
         background: var(--surface-2);
     }
 
+    /* Divider personalizado */
+    hr.st-divider {
+        border-color: rgba(255,255,255,.06) !important;
+        margin: 1rem 0 !important;
+    }
+
+    h3 {
+        font-family: 'Space Grotesk', sans-serif;
+        color: #ffffff;
+        font-size: 1.08rem;
+        margin: .6rem 0 .8rem;
+    }
+
     .small-note {
         color: var(--muted);
         font-size: .83rem;
         margin-top: .2rem;
+        line-height: 1.5;
+    }
+
+    div[data-testid="stAudioInput"] > div {
+        border: 1px solid var(--stroke);
+        border-radius: 12px;
+        background: rgba(255,255,255,.05);
+        transition: all 0.2s ease;
+    }
+
+    div[data-testid="stAudioInput"] > div:hover {
+        border-color: rgba(18,214,227,.4);
+    }
+
+    div[data-testid="stAudioInput"] button {
+        border-radius: 10px !important;
     }
 
     .version-badge {
@@ -332,14 +426,16 @@ st.markdown(
 
     @media (max-width: 900px) {
         [data-testid="stMainBlockContainer"] {
-            padding-top: .8rem;
-            padding-left: .8rem;
-            padding-right: .8rem;
+            padding-top: .6rem;
+            padding-left: .6rem;
+            padding-right: .6rem;
         }
 
         .hero {
-            padding: 1.2rem;
+            padding: 1rem;
         }
+
+
     }
     </style>
     """,
@@ -368,6 +464,7 @@ if "historico_ia" not in st.session_state:
     st.session_state.historico_ia = [_cached_system_prompts["pt"].copy()]
 if "rate_limit_timestamps" not in st.session_state:
     st.session_state.rate_limit_timestamps = []
+
 
 # ---------------------------------------------------------------------------
 # Constantes de segurança
@@ -415,17 +512,23 @@ def _check_rate_limit() -> bool:
 
 def render_message(role: str, content: str) -> None:
     """Renderiza uma mensagem de chat com proteção XSS."""
-    # SEGURANÇA: escape de todo conteúdo do usuário
     safe_content = html.escape(content)
-    # Preservar quebras de linha como <br> após o escape
     safe_content = safe_content.replace("\n", "<br>")
 
     css = "bubble-user" if role == "user" else "bubble-ai"
     ui = UI_TEXT[st.session_state.ui_lang]
+    avatar = "🧑" if role == "user" else "🤖"
     prefix = html.escape(ui["you"]) if role == "user" else "Pity-IA"
 
     st.markdown(
-        f'<div class="{css}"><strong>{prefix}:</strong> {safe_content}</div>',
+        f"""
+        <div class="msg-row {css}">
+            <div class="msg-avatar">{avatar}</div>
+            <div class="msg-body">
+                <strong>{prefix}:</strong> {safe_content}
+            </div>
+        </div>
+        """,
         unsafe_allow_html=True,
     )
 
@@ -436,6 +539,8 @@ def render_message(role: str, content: str) -> None:
 
 def landing_page() -> None:
     ui = UI_TEXT[st.session_state.ui_lang]
+    lang = st.session_state.ui_lang
+
     st.markdown(
         f"""
         <section class="hero">
@@ -506,11 +611,11 @@ def landing_page() -> None:
 # ---------------------------------------------------------------------------
 
 def process_voice_input(audio_bytes: bytes) -> str | None:
-    """Transcreve áudio recebido do componente de input."""
     if not audio_bytes:
         return None
 
-    temp_file = Path("audio_temp.wav")
+    temp_dir = Path(tempfile.gettempdir())
+    temp_file = temp_dir / "audio_temp.wav"
     try:
         temp_file.write_bytes(audio_bytes)
         text = transcribe_audio(str(temp_file))
@@ -577,6 +682,19 @@ def chat_page() -> None:
 
     st.divider()
 
+    # Area de Inputs (Texto e Voz)
+    st.markdown("### Digite sua mensagem ou use a voz")
+    
+    # Input de texto explícito
+    with st.form("text_input_form", clear_on_submit=True):
+        text_col, btn_col = st.columns([5, 1])
+        with text_col:
+            text_input = st.text_input("Mensagem", label_visibility="collapsed", placeholder=ui["chat_input"])
+        with btn_col:
+            submit_btn = st.form_submit_button("Enviar")
+            
+    user_input = text_input if (submit_btn and text_input.strip()) else None
+
     # Input de voz
     audio_col, help_col = st.columns([1, 3])
     with audio_col:
@@ -588,12 +706,6 @@ def chat_page() -> None:
             f"<p class='small-note'>{html.escape(ui['tip'])}</p>",
             unsafe_allow_html=True,
         )
-
-    # Input de texto
-    user_input = st.chat_input(
-        ui["chat_input"],
-        key="chat_input",
-    )
 
     # Processar áudio (se novo)
     audio_digest = hashlib.sha1(audio_bytes).hexdigest() if audio_bytes else None
@@ -654,19 +766,46 @@ def chat_page() -> None:
         st.divider()
         if st.button(ui["listen_last"], use_container_width=False):
             with open(st.session_state.last_audio_path, "rb") as f:
-                st.audio(f.read(), format="audio/wav")
+                st.audio(f.read(), format="audio/mpeg")
+
+    # Auto-scroll para a última mensagem
+    st.markdown(
+        """
+        <script>
+        window.scrollTo(0, document.body.scrollHeight);
+        </script>
+        """,
+        unsafe_allow_html=True,
+    )
 
 
 # ---------------------------------------------------------------------------
-# Layout principal
+# Sidebar Elegante
 # ---------------------------------------------------------------------------
-
-toolbar_left, toolbar_right = st.columns([6, 1.6])
-with toolbar_right:
+with st.sidebar:
+    st.markdown(
+        f"""
+        <div style="text-align: center; margin-bottom: 2rem; margin-top: 1rem;">
+            <h2 style="margin-bottom: 0; font-family: 'Space Grotesk', sans-serif; color: var(--brand); font-size: 1.8rem;">🤖 Pity-IA</h2>
+            <span class="version-badge" style="margin-top: 0.5rem; display: inline-block;">v{APP_VERSION}</span>
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+    
+    st.markdown("### Configurações")
     ui = UI_TEXT[st.session_state.ui_lang]
     if st.button(ui["layout_toggle"], use_container_width=True, help=ui["layout_help"]):
         st.session_state.ui_lang = "en" if st.session_state.ui_lang == "pt" else "pt"
         st.rerun()
+        
+    st.divider()
+    st.markdown("### Sobre")
+    st.caption("Assistente premium com respostas em tempo real, suporte a voz e chat seguro.")
+
+# ---------------------------------------------------------------------------
+# Layout principal
+# ---------------------------------------------------------------------------
 
 if st.session_state.page == "landing":
     landing_page()

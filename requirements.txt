@@ -1,7 +1,6 @@
 streamlit>=1.56.0
 requests>=2.32.0
 gtts>=2.4.0
-python-dotenv>=1.0.0
 SpeechRecognition>=3.10.4
 fastapi>=0.104.0
 uvicorn[standard]>=0.24.0
@@ -17,3 +16,6 @@ pytest-asyncio>=0.21.0
 
 # Build e CLI
 click>=8.1.0
+
+# Aceleração Streamlit Cloud
+pyarrow>=15.0.0
