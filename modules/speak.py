@@ -60,7 +60,7 @@ def speak_text(
             safe_name = Path(nome_arquivo).name
             audio_path = _TEMP_DIR / safe_name
         else:
-            audio_path = _TEMP_DIR / "resposta_audio.wav"
+            audio_path = _TEMP_DIR / "resposta_audio.mp3"
 
         tts = gTTS(text=texto_limpo, lang=idioma)
         tts.save(str(audio_path))

@@ -123,305 +123,346 @@ st.set_page_config(
 st.markdown(
     """
     <style>
-    @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Manrope:wght@400;600;700&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Manrope:wght@400;500;600;700&display=swap');
 
     :root {
         --bg-1: #07131f;
         --bg-2: #0d2538;
-        --surface: rgba(255,255,255,0.08);
-        --surface-2: rgba(255,255,255,0.12);
-        --stroke: rgba(255,255,255,0.18);
+        --surface: rgba(255,255,255,0.06);
+        --surface-2: rgba(255,255,255,0.10);
+        --stroke: rgba(255,255,255,0.10);
         --text: #f5fbff;
-        --muted: #b8c7d8;
+        --muted: #94a9c2;
         --brand: #12d6e3;
         --brand-2: #1f7afc;
         --success: #12d68e;
         --danger: #e35555;
+        --radius-sm: 10px;
+        --radius-md: 16px;
+        --radius-lg: 24px;
     }
 
     html, body, [data-testid="stAppViewContainer"] {
         font-family: 'Manrope', sans-serif;
         color: var(--text);
         background:
-            radial-gradient(1200px 500px at 10% -10%, rgba(18,214,227,.22), transparent 60%),
-            radial-gradient(900px 400px at 100% 0%, rgba(31,122,252,.25), transparent 55%),
-            linear-gradient(145deg, var(--bg-1), var(--bg-2));
-        background-size: 200% 200%;
-        animation: gradientShift 20s ease-in-out infinite alternate;
-    }
-
-    @keyframes gradientShift {
-        0%   { background-position: 0% 0%; }
-        50%  { background-position: 100% 100%; }
-        100% { background-position: 0% 100%; }
+            radial-gradient(1000px 400px at 20% -20%, rgba(18,214,227,.12), transparent 60%),
+            radial-gradient(800px 350px at 80% 0%, rgba(31,122,252,.15), transparent 55%),
+            linear-gradient(160deg, var(--bg-1), var(--bg-2));
     }
 
     [data-testid="stSidebar"] {
-        background: rgba(7, 19, 31, 0.7) !important;
-        backdrop-filter: blur(20px) !important;
-        border-right: 1px solid rgba(255,255,255,0.06) !important;
+        background: rgba(7, 19, 31, 0.6) !important;
+        backdrop-filter: blur(24px) !important;
+        border-right: 1px solid rgba(255,255,255,0.05) !important;
     }
 
     [data-testid="stSidebar"] hr {
-        border-color: rgba(255,255,255,0.08);
-        margin: 1rem 0 !important;
+        border-color: rgba(255,255,255,0.06);
+        margin: .8rem 0 !important;
     }
 
     [data-testid="stSidebar"] .stButton > button {
         font-size: .85rem;
         min-height: 2.3rem;
+        border-radius: var(--radius-sm) !important;
     }
 
     [data-testid="stMainBlockContainer"] {
-        padding-top: 1.2rem;
-        max-width: 1150px;
+        padding-top: 1.4rem;
+        max-width: 1100px;
     }
 
     .hero {
         border: 1px solid var(--stroke);
-        background: linear-gradient(180deg, rgba(255,255,255,.12), rgba(255,255,255,.04));
-        border-radius: 24px;
-        padding: 1.8rem;
-        backdrop-filter: blur(12px);
-        box-shadow: 0 12px 40px rgba(0,0,0,.28);
+        background: linear-gradient(180deg, rgba(255,255,255,.08), rgba(255,255,255,.02));
+        border-radius: var(--radius-lg);
+        padding: 2.2rem 2rem;
+        backdrop-filter: blur(8px);
     }
 
     .eyebrow {
         display: inline-block;
-        font-size: .75rem;
-        letter-spacing: .08em;
+        font-size: .7rem;
+        letter-spacing: .1em;
         text-transform: uppercase;
         color: var(--brand);
-        border: 1px solid rgba(18,214,227,.45);
+        border: 1px solid rgba(18,214,227,.3);
         border-radius: 999px;
-        padding: .28rem .6rem;
+        padding: .25rem .65rem;
         margin-bottom: .8rem;
+        font-weight: 600;
     }
 
     .hero h1 {
         font-family: 'Space Grotesk', sans-serif;
         font-size: clamp(2rem, 4vw, 3.2rem);
-        line-height: 1.1;
+        line-height: 1.15;
         margin: 0;
         color: white;
+        font-weight: 700;
+        letter-spacing: -.02em;
     }
 
     .hero p {
         color: var(--muted);
-        margin: .8rem 0 0;
+        margin: .9rem 0 0;
         font-size: 1.02rem;
+        line-height: 1.6;
+        max-width: 600px;
     }
 
     .panel {
         margin-top: 1rem;
         border: 1px solid var(--stroke);
-        background: linear-gradient(180deg, rgba(255,255,255,.12), rgba(255,255,255,.04));
-        border-radius: 18px;
-        padding: 1.2rem 1.3rem;
-        backdrop-filter: blur(10px);
+        background: linear-gradient(180deg, rgba(255,255,255,.07), rgba(255,255,255,.015));
+        border-radius: var(--radius-md);
+        padding: 1.3rem 1.4rem;
+        backdrop-filter: blur(6px);
         transition: all 0.3s ease;
     }
 
     .panel:hover {
-        border-color: rgba(18,214,227,.4);
-        box-shadow: 0 8px 32px rgba(18,214,227,.08);
-        transform: translateY(-2px);
+        border-color: rgba(18,214,227,.25);
+        background: linear-gradient(180deg, rgba(18,214,227,.06), rgba(255,255,255,.02));
+        transform: translateY(-3px);
     }
 
     .panel h3 {
         margin: 0 0 .35rem;
         color: #ffffff;
         font-family: 'Space Grotesk', sans-serif;
-        font-size: 1.1rem;
+        font-size: 1.05rem;
+        font-weight: 600;
     }
 
     .panel p {
         margin: 0;
         color: var(--muted);
-        font-size: .93rem;
-        line-height: 1.5;
+        font-size: .92rem;
+        line-height: 1.55;
     }
 
     .topbar {
         border: 1px solid var(--stroke);
-        background: linear-gradient(180deg, rgba(255,255,255,.12), rgba(255,255,255,.04));
-        border-radius: 16px;
-        padding: 1rem 1.2rem;
+        background: linear-gradient(180deg, rgba(255,255,255,.07), rgba(255,255,255,.015));
+        border-radius: var(--radius-md);
+        padding: .9rem 1.2rem;
         margin-bottom: .8rem;
-        backdrop-filter: blur(10px);
+        backdrop-filter: blur(6px);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: .5rem;
     }
 
     .topbar h2 {
-        margin: 0 0 .2rem;
+        margin: 0;
         font-family: 'Space Grotesk', sans-serif;
-        font-size: 1.25rem;
+        font-size: 1.2rem;
         color: #ffffff;
+        font-weight: 600;
     }
 
     .chip {
         display: inline-block;
         border: 1px solid var(--stroke);
         border-radius: 999px;
-        padding: .2rem .55rem;
-        font-size: .78rem;
+        padding: .2rem .6rem;
+        font-size: .75rem;
         color: var(--muted);
-        margin-right: .35rem;
+        background: rgba(255,255,255,.04);
     }
 
     .msg-row {
         display: flex;
         gap: .7rem;
-        margin: .6rem 0;
+        margin: .5rem 0;
         animation: pop .25s ease-out;
         align-items: flex-start;
     }
 
     .msg-avatar {
-        width: 36px;
-        height: 36px;
+        width: 34px;
+        height: 34px;
         border-radius: 50%;
         display: flex;
         align-items: center;
         justify-content: center;
-        font-size: 1.2rem;
+        font-size: 1.1rem;
         flex-shrink: 0;
-        background: rgba(255,255,255,.08);
-        border: 1px solid rgba(255,255,255,.12);
-        backdrop-filter: blur(4px);
+        background: rgba(255,255,255,.06);
+        border: 1px solid rgba(255,255,255,.08);
     }
 
     .msg-body {
-        border-radius: 16px;
-        padding: .85rem 1.1rem;
+        border-radius: var(--radius-md);
+        padding: .8rem 1.1rem;
         word-wrap: break-word;
         overflow-wrap: break-word;
-        line-height: 1.55;
-        box-shadow: 0 2px 12px rgba(0,0,0,.15);
+        line-height: 1.6;
         flex: 1;
         min-width: 0;
-    }
-
-    .bubble-user {
-        flex-direction: row;
+        font-size: .95rem;
     }
 
     .bubble-user .msg-body {
         background: linear-gradient(145deg, var(--brand-2), #1756d3);
         color: #fff;
-        border: 1px solid rgba(255,255,255,.18);
-    }
-
-    .bubble-ai {
-        flex-direction: row;
+        border: 1px solid rgba(255,255,255,.12);
     }
 
     .bubble-ai .msg-body {
-        background: rgba(255,255,255,.93);
+        background: rgba(255,255,255,.92);
         color: #14263a;
-        border: 1px solid rgba(18,214,227,.2);
+        border: 1px solid rgba(18,214,227,.15);
     }
 
     .bubble-ai pre {
         background: #1a2d45;
         color: #e0e8f5;
         border-radius: 8px;
-        padding: .6rem;
+        padding: .7rem;
         overflow-x: auto;
-        font-size: .88rem;
+        font-size: .86rem;
+        margin: .5rem 0 0;
     }
 
     @keyframes pop {
-        from {opacity: .55; transform: translateY(6px);}
+        from {opacity: .5; transform: translateY(8px);}
         to {opacity: 1; transform: translateY(0);}
     }
 
     .stButton > button {
         border: 1px solid var(--stroke);
-        background: linear-gradient(135deg, rgba(18,214,227,.2), rgba(31,122,252,.22));
+        background: linear-gradient(135deg, rgba(18,214,227,.15), rgba(31,122,252,.18));
         color: #ffffff;
-        border-radius: 12px;
-        font-weight: 700;
-        min-height: 2.6rem;
-        transition: all 0.25s ease;
+        border-radius: var(--radius-sm);
+        font-weight: 600;
+        min-height: 2.5rem;
+        transition: all 0.2s ease;
         letter-spacing: .01em;
     }
 
     .stButton > button:hover {
-        border-color: rgba(18,214,227,.6);
-        box-shadow: 0 0 0 2px rgba(18,214,227,.2) inset;
-        transform: translateY(-2px);
+        border-color: rgba(18,214,227,.5);
+        background: linear-gradient(135deg, rgba(18,214,227,.25), rgba(31,122,252,.28));
+        transform: translateY(-1px);
     }
 
     .stButton > button[kind="secondary"] {
-        background: rgba(255,255,255,.06);
-        border-color: rgba(255,255,255,.12);
+        background: rgba(255,255,255,.04);
+        border-color: rgba(255,255,255,.08);
     }
 
     .stButton > button[kind="secondary"]:hover {
-        background: rgba(255,255,255,.1);
-        border-color: rgba(18,214,227,.4);
+        background: rgba(255,255,255,.08);
+        border-color: rgba(18,214,227,.3);
+    }
+
+    .stButton > button:active {
+        transform: translateY(0) scale(.98);
     }
 
     div[data-testid="stChatInput"] {
-        border-radius: 14px;
+        border-radius: var(--radius-md);
         border: 1px solid var(--stroke);
         background: var(--surface-2);
+        transition: border-color .2s ease;
     }
 
-    /* Divider personalizado */
+    div[data-testid="stChatInput"]:focus-within {
+        border-color: rgba(18,214,227,.4);
+    }
+
     hr.st-divider {
-        border-color: rgba(255,255,255,.06) !important;
-        margin: 1rem 0 !important;
+        border-color: rgba(255,255,255,.04) !important;
+        margin: .8rem 0 !important;
     }
 
     h3 {
         font-family: 'Space Grotesk', sans-serif;
         color: #ffffff;
-        font-size: 1.08rem;
-        margin: .6rem 0 .8rem;
+        font-size: 1.05rem;
+        font-weight: 600;
+        margin: .5rem 0 .7rem;
     }
 
     .small-note {
         color: var(--muted);
-        font-size: .83rem;
-        margin-top: .2rem;
+        font-size: .82rem;
         line-height: 1.5;
     }
 
     div[data-testid="stAudioInput"] > div {
         border: 1px solid var(--stroke);
-        border-radius: 12px;
-        background: rgba(255,255,255,.05);
+        border-radius: var(--radius-sm);
+        background: rgba(255,255,255,.04);
         transition: all 0.2s ease;
     }
 
     div[data-testid="stAudioInput"] > div:hover {
-        border-color: rgba(18,214,227,.4);
+        border-color: rgba(18,214,227,.35);
     }
 
     div[data-testid="stAudioInput"] button {
-        border-radius: 10px !important;
+        border-radius: 8px !important;
     }
 
     .version-badge {
         display: inline-block;
-        font-size: .68rem;
+        font-size: .65rem;
         color: var(--muted);
         border: 1px solid var(--stroke);
         border-radius: 6px;
-        padding: .15rem .4rem;
-        margin-left: .5rem;
-        opacity: 0.7;
+        padding: .12rem .4rem;
+        opacity: 0.65;
+        font-weight: 500;
     }
 
     .rate-limit-warning {
-        background: rgba(227, 85, 85, 0.15);
-        border: 1px solid rgba(227, 85, 85, 0.3);
-        border-radius: 10px;
-        padding: .6rem .8rem;
+        background: rgba(227, 85, 85, 0.1);
+        border: 1px solid rgba(227, 85, 85, 0.2);
+        border-radius: var(--radius-sm);
+        padding: .6rem .9rem;
         color: #ffaaaa;
-        font-size: .88rem;
+        font-size: .86rem;
         margin: .5rem 0;
+    }
+
+    .stForm {
+        border: none !important;
+        padding: 0 !important;
+        background: transparent !important;
+    }
+
+    div[data-testid="stForm"] {
+        border: none !important;
+        padding: 0 !important;
+        background: transparent !important;
+    }
+
+    textarea:focus {
+        border-color: rgba(18,214,227,.4) !important;
+    }
+
+    ::-webkit-scrollbar {
+        width: 6px;
+        height: 6px;
+    }
+
+    ::-webkit-scrollbar-track {
+        background: transparent;
+    }
+
+    ::-webkit-scrollbar-thumb {
+        background: rgba(255,255,255,.1);
+        border-radius: 3px;
+    }
+
+    ::-webkit-scrollbar-thumb:hover {
+        background: rgba(255,255,255,.2);
     }
 
     @media (max-width: 900px) {
@@ -432,10 +473,13 @@ st.markdown(
         }
 
         .hero {
-            padding: 1rem;
+            padding: 1.2rem;
         }
 
-
+        .topbar {
+            flex-direction: column;
+            align-items: flex-start;
+        }
     }
     </style>
     """,
@@ -635,9 +679,11 @@ def process_voice_input(audio_bytes: bytes) -> str | None:
 def chat_page() -> None:
     ui = UI_TEXT[st.session_state.ui_lang]
 
+    st.markdown('<div style="height:.5rem"></div>', unsafe_allow_html=True)
+
     # Header
     st.markdown('<div class="topbar">', unsafe_allow_html=True)
-    header_left, header_mid, header_right = st.columns([3, 1.2, 1.2])
+    header_left, header_mid, header_right = st.columns([3, 1.3, 1.3])
 
     with header_left:
         st.markdown(
@@ -683,7 +729,8 @@ def chat_page() -> None:
     st.divider()
 
     # Area de Inputs (Texto e Voz)
-    st.markdown("### Digite sua mensagem ou use a voz")
+    input_title = "### 💬 Digite sua mensagem ou use a voz" if st.session_state.ui_lang == "pt" else "### 💬 Type your message or use voice"
+    st.markdown(input_title)
     
     # Input de texto explícito
     with st.form("text_input_form", clear_on_submit=True):
@@ -691,7 +738,8 @@ def chat_page() -> None:
         with text_col:
             text_input = st.text_input("Mensagem", label_visibility="collapsed", placeholder=ui["chat_input"])
         with btn_col:
-            submit_btn = st.form_submit_button("Enviar")
+            submit_label = "Enviar" if st.session_state.ui_lang == "pt" else "Send"
+            submit_btn = st.form_submit_button(submit_label)
             
     user_input = text_input if (submit_btn and text_input.strip()) else None
 
@@ -785,23 +833,38 @@ def chat_page() -> None:
 with st.sidebar:
     st.markdown(
         f"""
-        <div style="text-align: center; margin-bottom: 2rem; margin-top: 1rem;">
-            <h2 style="margin-bottom: 0; font-family: 'Space Grotesk', sans-serif; color: var(--brand); font-size: 1.8rem;">🤖 Pity-IA</h2>
-            <span class="version-badge" style="margin-top: 0.5rem; display: inline-block;">v{APP_VERSION}</span>
+        <div style="text-align: center; margin-bottom: 2rem; margin-top: .5rem;">
+            <div style="font-size: 2.4rem; margin-bottom: .3rem;">🤖</div>
+            <h2 style="margin: 0; font-family: 'Space Grotesk', sans-serif; color: var(--brand); font-size: 1.6rem; font-weight: 700;">Pity-IA</h2>
+            <span class="version-badge" style="margin-top: .4rem; display: inline-block;">v{APP_VERSION}</span>
         </div>
         """,
         unsafe_allow_html=True
     )
     
-    st.markdown("### Configurações")
+    st.markdown("### 🌐 Idioma / Language")
     ui = UI_TEXT[st.session_state.ui_lang]
-    if st.button(ui["layout_toggle"], use_container_width=True, help=ui["layout_help"]):
-        st.session_state.ui_lang = "en" if st.session_state.ui_lang == "pt" else "pt"
-        st.rerun()
+    col_lang1, col_lang2 = st.columns(2)
+    with col_lang1:
+        if st.button("🇧🇷 PT", use_container_width=True,
+                     disabled=st.session_state.ui_lang == "pt",
+                     type="primary" if st.session_state.ui_lang == "pt" else "secondary"):
+            if st.session_state.ui_lang != "pt":
+                st.session_state.ui_lang = "pt"
+                st.rerun()
+    with col_lang2:
+        if st.button("🇺🇸 EN", use_container_width=True,
+                     disabled=st.session_state.ui_lang == "en",
+                     type="primary" if st.session_state.ui_lang == "en" else "secondary"):
+            if st.session_state.ui_lang != "en":
+                st.session_state.ui_lang = "en"
+                st.rerun()
         
     st.divider()
-    st.markdown("### Sobre")
-    st.caption("Assistente premium com respostas em tempo real, suporte a voz e chat seguro.")
+    about_title = "### ℹ️ Sobre" if st.session_state.ui_lang == "pt" else "### ℹ️ About"
+    about_text = "Assistente premium com respostas em tempo real, suporte a voz e chat seguro." if st.session_state.ui_lang == "pt" else "Premium assistant with real-time responses, voice support, and secure chat."
+    st.markdown(about_title)
+    st.caption(about_text)
 
 # ---------------------------------------------------------------------------
 # Layout principal
@@ -813,12 +876,13 @@ else:
     chat_page()
 
 # Footer
+footer_text = "Engenharia de software" if st.session_state.ui_lang == "pt" else "Software Engineering"
 st.markdown(
     f"""
-    <div style="text-align: center; margin-top: 2rem; padding: 0.8rem;
-         border-top: 1px solid rgba(255,255,255,0.1);">
-        <span style="color: var(--muted); font-size: .78rem;">
-            © 2025-2026 Pity-IA Studio · Leandro Timóteo Engenharia de software · v{APP_VERSION}
+    <div style="text-align: center; margin-top: 2rem; padding: .7rem;
+         border-top: 1px solid rgba(255,255,255,0.05);">
+        <span style="color: var(--muted); font-size: .75rem; opacity: .7;">
+            © 2025–2026 Pity-IA Studio · Leandro Timóteo {footer_text} · v{APP_VERSION}
         </span>
     </div>
     """,

@@ -51,9 +51,9 @@ _this_dir = Path(__file__).resolve().parent
 _root_dir = _this_dir.parent
 
 if load_dotenv:
-    load_dotenv(_root_dir / ".env", override=False)
-    load_dotenv(_this_dir / "env" / ".env", override=False)
-    load_dotenv(_root_dir / "env" / ".env", override=False)
+    load_dotenv(_root_dir / ".env", override=True)
+    load_dotenv(_this_dir / "env" / ".env", override=True)
+    load_dotenv(_root_dir / "env" / ".env", override=True)
 else:
     _load_env_file(_root_dir / ".env")
     _load_env_file(_this_dir / "env" / ".env")
