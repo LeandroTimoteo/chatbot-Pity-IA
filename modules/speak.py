@@ -6,13 +6,14 @@ Segurança:
 - Texto limitado em tamanho para prevenir abuso
 """
 
-import logging
 import tempfile
 from pathlib import Path
 
 from gtts import gTTS
 
-logger = logging.getLogger(__name__)
+from modules.logger import get_logger
+
+logger = get_logger(__name__, log_file="app.log")
 
 # Limites de segurança
 MAX_TTS_LENGTH = 1000

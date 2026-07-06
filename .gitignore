@@ -21,6 +21,7 @@ htmlcov/
 .env.*
 .env.local
 .env.production
+modules/env/
 .streamlit/secrets.toml
 
 # ===========================
@@ -73,3 +74,4 @@ tmp/
 # ===========================
 .devcontainer/
 .refact/
+.github/

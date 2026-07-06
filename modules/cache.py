@@ -10,7 +10,7 @@ import time
 from typing import Any, Optional
 from functools import wraps
 
-from logger import get_logger
+from modules.logger import get_logger
 
 logger = get_logger(__name__, log_file="cache.log")
 
@@ -110,9 +110,11 @@ class ResponseCache:
             logger.debug(f"Cache INVALIDATE: {key[:8]}...")
 
     def clear(self) -> None:
-        """Limpa todo o cache."""
+        """Limpa todo o cache e reseta estatísticas."""
         count = len(self._cache)
         self._cache.clear()
+        self._hits = 0
+        self._misses = 0
         logger.info(f"Cache CLEAR: {count} itens removidos")
 
     def _cleanup_expired(self) -> None:

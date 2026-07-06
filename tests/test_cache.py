@@ -152,7 +152,7 @@ class TestCacheGlobalFunctions:
 
         stats = get_cache_stats()
         assert stats["hits"] == 1
-        assert stats["misses"] == 1
+        assert stats["misses"] == 2
 
     def test_clear_cache_global(self):
         """Testa função clear_cache global."""

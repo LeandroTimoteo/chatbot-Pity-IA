@@ -6,10 +6,11 @@ Segurança:
 - Tratamento robusto de exceções
 """
 
-import logging
 from pathlib import Path
 
-logger = logging.getLogger(__name__)
+from modules.logger import get_logger
+
+logger = get_logger(__name__, log_file="app.log")
 
 try:
     import speech_recognition as sr

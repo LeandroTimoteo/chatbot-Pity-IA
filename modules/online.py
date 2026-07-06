@@ -21,8 +21,8 @@ try:
 except ImportError:
     load_dotenv = None
 
-from logger import get_logger
-from cache import cached_response, get_cache_stats
+from modules.logger import get_logger
+
 
 # Configurar logging
 logger = get_logger(__name__, log_file="online.log")
@@ -245,7 +245,6 @@ def _chat_completion(
 # Interface pública
 # ---------------------------------------------------------------------------
 
-@cached_response(ttl=3600)  # Cache de 1 hora
 def gerar_resposta_online(
     prompt: str,
     idioma: str = "pt",

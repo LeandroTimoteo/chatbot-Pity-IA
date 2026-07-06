@@ -18,10 +18,10 @@ from pathlib import Path
 
 import streamlit as st
 
-from logger import get_logger
-from transcribe import transcribe_audio
-from speak import speak_text
-from online import gerar_resposta_online, SYSTEM_PROMPTS
+from modules.logger import get_logger
+from modules.transcribe import transcribe_audio
+from modules.speak import speak_text
+from modules.online import gerar_resposta_online, SYSTEM_PROMPTS
 
 # Configurar logging
 logger = get_logger(__name__, log_file="streamlit.log")
