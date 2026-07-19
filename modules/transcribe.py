@@ -6,7 +6,11 @@ Segurança:
 - Tratamento robusto de exceções
 """
 
+import sys
 from pathlib import Path
+
+# Adicionar root ao path para imports
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from modules.logger import get_logger
 

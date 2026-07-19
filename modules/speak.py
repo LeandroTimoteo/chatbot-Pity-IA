@@ -6,10 +6,14 @@ Segurança:
 - Texto limitado em tamanho para prevenir abuso
 """
 
+import sys
 import tempfile
 from pathlib import Path
 
 from gtts import gTTS
+
+# Adicionar root ao path para imports
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from modules.logger import get_logger
 

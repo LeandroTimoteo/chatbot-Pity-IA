@@ -4,11 +4,16 @@ Implementa cache em memória com suporte a TTL (Time-To-Live) e limite de tamanh
 Otimizado para respostas de IA e histórico de conversas.
 """
 
+import sys
 import hashlib
 import json
 import time
+from pathlib import Path
 from typing import Any, Optional
 from functools import wraps
+
+# Adicionar root ao path para imports
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from modules.logger import get_logger
 

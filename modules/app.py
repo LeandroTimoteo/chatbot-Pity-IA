@@ -9,12 +9,17 @@ Segurança:
 - Logging estruturado para monitoramento
 """
 
-import html
+import sys
 import os
+from pathlib import Path
+
+# Adicionar root ao path para imports
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
+import html
 import hashlib
 import tempfile
 import time
-from pathlib import Path
 
 import streamlit as st
 

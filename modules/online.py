@@ -9,6 +9,7 @@ Segurança:
 - Cache automático de respostas com TTL
 """
 
+import sys
 import os
 import time
 from pathlib import Path
@@ -20,6 +21,9 @@ try:
     from dotenv import load_dotenv
 except ImportError:
     load_dotenv = None
+
+# Adicionar root ao path para imports
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from modules.logger import get_logger
 
@@ -341,19 +345,59 @@ def _traduzir_resposta(texto: str, direcao: str) -> str:
 
     Returns:
         Texto traduzido, ou o original se a tradução falhar.
+
+    Observações de implementação:
+    - Log detalhado do payload e da resposta quando ocorrer erro.
+    - Validação da estrutura de resposta da API antes de acessar campos.
     """
+    if direcao not in ("pt_to_en", "en_to_pt"):
+        logger.error("Direção de tradução inválida: %s", direcao)
+        return texto
+
+    destino = "inglês" if direcao == "pt_to_en" else "português"
+    prompt_traducao = (
+        f"Traduza este texto para {destino}:\n\n{texto}\n\n"
+        "Apenas forneça a tradução, sem explicações adicionais."
+    )
+
     try:
-        destino = "inglês" if direcao == "pt_to_en" else "português"
-        prompt_traducao = (
-            f"Traduza este texto para {destino}:\n\n{texto}\n\n"
-            "Apenas forneça a tradução, sem explicações adicionais."
-        )
         response = _chat_completion(
             messages=[{"role": "user", "content": prompt_traducao}],
             temperature=0.3,
             max_tokens=300,
         )
-        return response["choices"][0]["message"]["content"].strip()
+
+        # Validação robusta da resposta
+        if not isinstance(response, dict):
+            logger.error("Resposta de tradução inesperada (não é dict): %s", repr(response))
+            return texto
+
+        choices = response.get("choices")
+        if not choices or not isinstance(choices, list):
+            logger.error("Resposta de tradução sem 'choices' válidas: %s", response)
+            return texto
+
+        first = choices[0]
+        if not isinstance(first, dict) or "message" not in first:
+            logger.error("Estrutura de escolha inesperada na tradução: %s", first)
+            return texto
+
+        content = first.get("message", {}).get("content")
+        if not isinstance(content, str):
+            logger.error("Conteúdo da tradução ausente ou inválido: %s", first)
+            return texto
+
+        translation = content.strip()
+        return translation
+
     except Exception as exc:
-        logger.warning("Tradução falhou: %s", exc)
+        # Log com contexto: direção, início do texto e exceção com stack
+        preview = (texto[:200] + "...") if len(texto) > 200 else texto
+        logger.exception(
+            "Falha na tradução (direcao=%s) para texto (preview=%s): %s",
+            direcao,
+            preview,
+            exc,
+        )
+        # Retorna o texto original como fallback amigável
         return texto
