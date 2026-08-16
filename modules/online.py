@@ -118,13 +118,15 @@ def _get_api_key() -> str:
 
 def _build_headers() -> dict:
     """Constrói headers frescos a cada request (suporta carregamento tardio)."""
+    key = _get_api_key()
+    if not key:
+        logger.error("Nenhuma OPENROUTER_API_KEY configurada; requisições à API irão falhar com 401.")
     return {
-        "Authorization": f"Bearer {_get_api_key()}",
+        "Authorization": f"Bearer {key}" if key else "",
         "Content-Type": "application/json",
         "HTTP-Referer": os.getenv("APP_PUBLIC_URL", "https://chatbot-pity-ia.streamlit.app"),
         "X-Title": os.getenv("APP_NAME", "Chatbot Pity IA"),
     }
-
 
 def _sanitize_prompt(prompt: str) -> str:
     """Sanitiza e valida o prompt do usuário."""
@@ -401,3 +403,4 @@ def _traduzir_resposta(texto: str, direcao: str) -> str:
         )
         # Retorna o texto original como fallback amigável
         return texto
+
