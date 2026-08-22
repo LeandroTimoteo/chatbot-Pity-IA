@@ -1,9 +1,0 @@
-{
-  "models": [
-    {
-      "title": "Ollama",
-      "provider": "ollama",
-      "model": "llama3"
-    }
-  ]
-}
