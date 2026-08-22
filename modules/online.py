@@ -190,12 +190,17 @@ def _chat_completion(
                     model
                 )
                 
-                response = requests.post(
-                    OPENROUTER_API_URL,
-                    headers=headers,
-                    json=payload,
-                    timeout=90,
-                )
+                # Não herda proxies definidos no ambiente. Em alguns hosts
+                # locais essas variáveis apontam para um proxy temporário que
+                # já não está ativo e bloqueiam a conexão com o OpenRouter.
+                with requests.Session() as session:
+                    session.trust_env = False
+                    response = session.post(
+                        OPENROUTER_API_URL,
+                        headers=headers,
+                        json=payload,
+                        timeout=90,
+                    )
                 
                 if response.status_code >= 400:
                     error_msg = f"API error {response.status_code}: {response.text[:200]}"
